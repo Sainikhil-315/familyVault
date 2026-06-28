@@ -65,3 +65,32 @@ export async function getNotifications(): Promise<Notification[]> {
   const res = await api.get<{ success: boolean; data: Notification[] }>('/api/member/notifications');
   return res.data.data;
 }
+
+export interface MemberInfo {
+  id: string;
+  name: string;
+  phone: string;
+  role: 'admin' | 'member';
+  canUpload: boolean;
+  joinedAt: number;
+}
+
+export async function getMembers(familyId: string): Promise<MemberInfo[]> {
+  const res = await api.get<{ success: boolean; data: MemberInfo[] }>(
+    '/api/family/members',
+    { params: { familyId } }
+  );
+  return res.data.data;
+}
+
+export async function toggleMemberUpload(familyId: string, memberId: string, canUpload: boolean): Promise<void> {
+  await api.patch('/api/family/members/toggle-upload', { familyId, memberId, canUpload });
+}
+
+export async function renameFamily(familyId: string, newName: string): Promise<void> {
+  await api.patch('/api/family/rename', { familyId, newName });
+}
+
+export async function changeFamilyPin(familyId: string, currentPin: string, newPin: string): Promise<void> {
+  await api.patch('/api/family/change-pin', { familyId, currentPin, newPin });
+}

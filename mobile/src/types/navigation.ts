@@ -18,4 +18,7 @@ export type AppStackParamList = {
   Category: { category: string; label: string };
   DocumentUpload: { presetCategory?: string } | undefined;
   DocumentView: { doc: DocumentMeta };
+  Members: undefined;
+  Profile: undefined;
+  FamilySettings: undefined;
 };

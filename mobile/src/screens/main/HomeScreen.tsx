@@ -1,27 +1,32 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { signOut } from 'firebase/auth';
 import { AppStackParamList } from '../../types/navigation';
-import { firebaseAuth } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { colors, spacing, fontSize } from '../../theme';
+import { colors, spacing, fontSize, radius } from '../../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<AppStackParamList, 'Home'>;
 };
 
 export default function HomeScreen({ navigation }: Props) {
-  const { role, canUpload } = useAuth();
+  const { role, canUpload, memberName, user } = useAuth();
   const isAdmin = role === 'admin';
   const showUpload = isAdmin || canUpload;
+  const greeting = memberName ?? user?.phoneNumber ?? 'there';
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.logo}>🏠 FamilyVault</Text>
-        <TouchableOpacity onPress={() => signOut(firebaseAuth)}>
-          <Text style={styles.signOutText}>Sign Out</Text>
+        <View>
+          <Text style={styles.logo}>FamilyVault</Text>
+          <Text style={styles.greeting}>Hi, {greeting}</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.profileBtn}
+          onPress={() => navigation.navigate('Profile')}
+        >
+          <Text style={styles.profileInitial}>{greeting.charAt(0).toUpperCase()}</Text>
         </TouchableOpacity>
       </View>
 
@@ -54,7 +59,7 @@ export default function HomeScreen({ navigation }: Props) {
         {isAdmin && (
           <>
             <Text style={styles.sectionTitle}>Admin</Text>
-            <View style={styles.adminActions}>
+            <View style={styles.adminGrid}>
               <TouchableOpacity
                 style={styles.actionCard}
                 onPress={() => navigation.navigate('InviteMember')}
@@ -69,6 +74,22 @@ export default function HomeScreen({ navigation }: Props) {
               >
                 <Text style={styles.actionIcon}>🔔</Text>
                 <Text style={styles.actionLabel}>Join Requests</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => navigation.navigate('Members')}
+              >
+                <Text style={styles.actionIcon}>👥</Text>
+                <Text style={styles.actionLabel}>Members</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionCard}
+                onPress={() => navigation.navigate('FamilySettings')}
+              >
+                <Text style={styles.actionIcon}>⚙️</Text>
+                <Text style={styles.actionLabel}>Settings</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -86,7 +107,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: colors.border,
   },
   logo: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text },
-  signOutText: { color: colors.textSecondary, fontSize: fontSize.sm },
+  greeting: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 2 },
+  profileBtn: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: colors.primaryLight, justifyContent: 'center', alignItems: 'center',
+  },
+  profileInitial: { fontSize: fontSize.md, fontWeight: '700', color: colors.primary },
   content: { padding: spacing.xl, gap: spacing.md },
   sectionTitle: {
     fontSize: fontSize.sm, fontWeight: '700', color: colors.textSecondary,
@@ -94,7 +120,7 @@ const styles = StyleSheet.create({
   },
   primaryCard: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-    backgroundColor: colors.surface, borderRadius: 16, padding: spacing.lg,
+    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg,
     borderWidth: 1, borderColor: colors.border,
   },
   primaryCardIcon: { fontSize: 32 },
@@ -104,13 +130,13 @@ const styles = StyleSheet.create({
   chevron: { fontSize: 22, color: colors.textSecondary },
   uploadCard: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
-    backgroundColor: colors.primary, borderRadius: 12, padding: spacing.md,
+    backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md,
   },
   uploadCardIcon: { fontSize: 20 },
   uploadCardText: { color: colors.white, fontSize: fontSize.md, fontWeight: '600' },
-  adminActions: { flexDirection: 'row', gap: spacing.md },
+  adminGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   actionCard: {
-    flex: 1, backgroundColor: colors.primaryLight, borderRadius: 16,
+    width: '47%', backgroundColor: colors.primaryLight, borderRadius: radius.lg,
     padding: spacing.lg, alignItems: 'center', gap: spacing.sm,
   },
   actionIcon: { fontSize: 28 },

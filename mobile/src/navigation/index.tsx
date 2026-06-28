@@ -21,6 +21,9 @@ import DocumentsHomeScreen from '../screens/main/DocumentsHomeScreen';
 import CategoryScreen from '../screens/main/CategoryScreen';
 import DocumentUploadScreen from '../screens/main/DocumentUploadScreen';
 import DocumentViewScreen from '../screens/main/DocumentViewScreen';
+import MemberManagementScreen from '../screens/main/MemberManagementScreen';
+import ProfileScreen from '../screens/main/ProfileScreen';
+import FamilySettingsScreen from '../screens/main/FamilySettingsScreen';
 
 const OnboardingStack = createNativeStackNavigator<OnboardingStackParamList>();
 const AppStack = createNativeStackNavigator<AppStackParamList>();
@@ -49,6 +52,9 @@ function AppNavigator() {
       <AppStack.Screen name="Category" component={CategoryScreen} />
       <AppStack.Screen name="DocumentUpload" component={DocumentUploadScreen} />
       <AppStack.Screen name="DocumentView" component={DocumentViewScreen} />
+      <AppStack.Screen name="Members" component={MemberManagementScreen} />
+      <AppStack.Screen name="Profile" component={ProfileScreen} />
+      <AppStack.Screen name="FamilySettings" component={FamilySettingsScreen} />
     </AppStack.Navigator>
   );
 }
