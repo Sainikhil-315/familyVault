@@ -14,7 +14,7 @@ type Props = {
 };
 
 export default function FamilySettingsScreen({ navigation }: Props) {
-  const { familyId, refreshAuth } = useAuth();
+  const { familyId } = useAuth();
 
   const [newName, setNewName] = useState('');
   const [renamingLoading, setRenamingLoading] = useState(false);
