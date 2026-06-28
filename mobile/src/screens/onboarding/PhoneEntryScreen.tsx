@@ -6,6 +6,7 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../types/navigation';
 import { sendOtp } from '../../api/auth.api';
+import { checkInvite } from '../../api/family.api';
 import { colors, spacing, fontSize } from '../../theme';
 
 type Props = {
@@ -19,14 +20,33 @@ export default function PhoneEntryScreen({ navigation }: Props) {
   const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
   const isValid = /^\+[1-9]\d{7,14}$/.test(formattedPhone) && phone.replace(/\D/g, '').length >= 10;
 
-  async function handleSendOtp() {
+  async function handleContinue() {
     if (!isValid) return;
     setLoading(true);
     try {
+      // Check if this number is invited to a family (member path)
+      const invite = await checkInvite(formattedPhone);
+
+      if (invite.alreadyMember) {
+        Alert.alert('Already a member', 'This number is already part of a family. Please sign in normally.');
+        return;
+      }
+
+      if (invite.invited && invite.familyId && invite.familyName) {
+        // Member path: skip OTP, go to family confirmation
+        navigation.navigate('FamilyConfirm', {
+          phone: formattedPhone,
+          familyId: invite.familyId,
+          familyName: invite.familyName,
+        });
+        return;
+      }
+
+      // Admin path: send OTP
       await sendOtp(formattedPhone);
       navigation.navigate('OTP', { phone: formattedPhone });
     } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to send OTP');
+      Alert.alert('Error', err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setLoading(false);
     }
@@ -36,7 +56,7 @@ export default function PhoneEntryScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Enter your phone number</Text>
-        <Text style={styles.subtitle}>We'll send a verification code to confirm it's you</Text>
+        <Text style={styles.subtitle}>Members are verified via family PIN — no OTP cost</Text>
 
         <View style={styles.inputRow}>
           <View style={styles.prefix}>
@@ -60,13 +80,13 @@ export default function PhoneEntryScreen({ navigation }: Props) {
       <View style={styles.footer}>
         <TouchableOpacity
           style={[styles.button, !isValid && styles.buttonDisabled]}
-          onPress={handleSendOtp}
+          onPress={handleContinue}
           disabled={!isValid || loading}
         >
           {loading ? (
             <ActivityIndicator color={colors.white} />
           ) : (
-            <Text style={styles.buttonText}>Send OTP</Text>
+            <Text style={styles.buttonText}>Continue</Text>
           )}
         </TouchableOpacity>
       </View>

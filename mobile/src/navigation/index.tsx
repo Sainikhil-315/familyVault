@@ -10,7 +10,17 @@ import WelcomeScreen from '../screens/onboarding/WelcomeScreen';
 import PhoneEntryScreen from '../screens/onboarding/PhoneEntryScreen';
 import OTPScreen from '../screens/onboarding/OTPScreen';
 import FamilyCreateScreen from '../screens/onboarding/FamilyCreateScreen';
+import FamilyConfirmScreen from '../screens/onboarding/FamilyConfirmScreen';
+import FamilyPINScreen from '../screens/onboarding/FamilyPINScreen';
+import JoinPendingScreen from '../screens/onboarding/JoinPendingScreen';
+
 import HomeScreen from '../screens/main/HomeScreen';
+import InviteMemberScreen from '../screens/main/InviteMemberScreen';
+import NotificationsScreen from '../screens/main/NotificationsScreen';
+import DocumentsHomeScreen from '../screens/main/DocumentsHomeScreen';
+import CategoryScreen from '../screens/main/CategoryScreen';
+import DocumentUploadScreen from '../screens/main/DocumentUploadScreen';
+import DocumentViewScreen from '../screens/main/DocumentViewScreen';
 
 const OnboardingStack = createNativeStackNavigator<OnboardingStackParamList>();
 const AppStack = createNativeStackNavigator<AppStackParamList>();
@@ -22,6 +32,9 @@ function OnboardingNavigator() {
       <OnboardingStack.Screen name="PhoneEntry" component={PhoneEntryScreen} />
       <OnboardingStack.Screen name="OTP" component={OTPScreen} />
       <OnboardingStack.Screen name="FamilyCreate" component={FamilyCreateScreen} />
+      <OnboardingStack.Screen name="FamilyConfirm" component={FamilyConfirmScreen} />
+      <OnboardingStack.Screen name="FamilyPIN" component={FamilyPINScreen} />
+      <OnboardingStack.Screen name="JoinPending" component={JoinPendingScreen} />
     </OnboardingStack.Navigator>
   );
 }
@@ -30,6 +43,12 @@ function AppNavigator() {
   return (
     <AppStack.Navigator screenOptions={{ headerShown: false }}>
       <AppStack.Screen name="Home" component={HomeScreen} />
+      <AppStack.Screen name="InviteMember" component={InviteMemberScreen} />
+      <AppStack.Screen name="Notifications" component={NotificationsScreen} />
+      <AppStack.Screen name="DocumentsHome" component={DocumentsHomeScreen} />
+      <AppStack.Screen name="Category" component={CategoryScreen} />
+      <AppStack.Screen name="DocumentUpload" component={DocumentUploadScreen} />
+      <AppStack.Screen name="DocumentView" component={DocumentViewScreen} />
     </AppStack.Navigator>
   );
 }

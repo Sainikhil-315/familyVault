@@ -5,6 +5,8 @@ import cors from 'cors';
 import { env } from './config/env';
 import authRoutes from './routes/auth.routes';
 import familyRoutes from './routes/family.routes';
+import memberRoutes from './routes/member.routes';
+import documentRoutes from './routes/documents.routes';
 import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
@@ -22,6 +24,8 @@ app.get('/health', (_req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/family', familyRoutes);
+app.use('/api/member', memberRoutes);
+app.use('/api/documents', documentRoutes);
 
 app.use(errorHandler);
 

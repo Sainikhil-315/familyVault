@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isActiveMember(familyId) {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid)).data.status == 'active';
+    }
+
+    function isAdmin(familyId) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/families/$(familyId)).data.adminId == request.auth.uid;
+    }
+
+    // ── Users ─────────────────────────────────────────────────────────────────
+
+    match /users/{userId} {
+      allow read: if request.auth.uid == userId;
+      allow write: if false; // backend only
+    }
+
+    // ── Families ──────────────────────────────────────────────────────────────
+
+    match /families/{familyId} {
+      allow read: if isActiveMember(familyId);
+      allow write: if false; // backend only
+
+      match /members/{memberId} {
+        allow read: if isActiveMember(familyId);
+        allow write: if false; // backend only
+      }
+
+      match /invitedNumbers/{phone} {
+        allow read: if isAdmin(familyId);
+        allow write: if false; // backend only
+      }
+    }
+
+    // ── Documents ─────────────────────────────────────────────────────────────
+
+    match /documents/{docId} {
+      allow read: if isActiveMember(resource.data.familyId);
+      allow write: if false; // backend only
+    }
+
+    // ── Notifications ─────────────────────────────────────────────────────────
+
+    match /notifications/{notifId} {
+      allow read: if isAdmin(resource.data.familyId);
+      allow write: if false; // backend only
+    }
+
+    // ── OTP codes — never accessible from client ──────────────────────────────
+
+    match /otp_codes/{phone} {
+      allow read, write: if false;
+    }
+  }
+}
