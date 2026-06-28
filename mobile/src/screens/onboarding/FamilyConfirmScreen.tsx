@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+﻿import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { OnboardingStackParamList } from '../../types/navigation';
@@ -16,7 +17,7 @@ export default function FamilyConfirmScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.icon}>👨‍👩‍👧‍👦</Text>
+        <Text style={styles.icon}>ðŸ‘¨â€ðŸ‘©â€ðŸ‘§â€ðŸ‘¦</Text>
         <Text style={styles.title}>You've been invited!</Text>
         <Text style={styles.subtitle}>Your number has been added to a family vault</Text>
 

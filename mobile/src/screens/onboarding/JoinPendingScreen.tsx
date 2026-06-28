@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+﻿import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { signOut } from 'firebase/auth';
 import { firebaseAuth } from '../../config/firebase';
 import { colors, spacing, fontSize } from '../../theme';
@@ -8,7 +9,7 @@ export default function JoinPendingScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.icon}>⏳</Text>
+        <Text style={styles.icon}>â³</Text>
         <Text style={styles.title}>Request Sent!</Text>
         <Text style={styles.subtitle}>
           Your join request has been sent to the family admin. You'll get access once they approve you.
@@ -36,7 +37,7 @@ function StepRow({ number, text, done }: { number: string; text: string; done: b
     <View style={stepStyles.row}>
       <View style={[stepStyles.badge, done && stepStyles.badgeDone]}>
         <Text style={[stepStyles.badgeText, done && stepStyles.badgeTextDone]}>
-          {done ? '✓' : number}
+          {done ? 'âœ“' : number}
         </Text>
       </View>
       <Text style={[stepStyles.text, done && stepStyles.textDone]}>{text}</Text>

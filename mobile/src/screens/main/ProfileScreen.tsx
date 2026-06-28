@@ -1,7 +1,8 @@
-import React from 'react';
+﻿import React from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert,
+  View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { signOut } from 'firebase/auth';
 import { AppStackParamList } from '../../types/navigation';
@@ -25,7 +26,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 export default function ProfileScreen({ navigation }: Props) {
   const { user, role, canUpload, memberName } = useAuth();
 
-  const phone = user?.phoneNumber ?? '—';
+  const phone = user?.phoneNumber ?? 'â€”';
   const displayName = memberName ?? phone;
   const roleLabel = role === 'admin' ? 'Admin' : 'Member';
   const uploadLabel = role === 'admin' ? 'Yes (admin)' : canUpload ? 'Yes' : 'No';
@@ -49,7 +50,7 @@ export default function ProfileScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backText}>← Back</Text>
+          <Text style={styles.backText}>â† Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Profile</Text>
         <View style={styles.backBtn} />

@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+﻿import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../types/navigation';
 import { colors, spacing, fontSize } from '../../theme';
@@ -13,15 +14,15 @@ export default function WelcomeScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.logoContainer}>
-          <Text style={styles.logoIcon}>🏠</Text>
+          <Text style={styles.logoIcon}>ðŸ </Text>
           <Text style={styles.logoText}>FamilyVault</Text>
           <Text style={styles.tagline}>One vault. Every document. Your whole family.</Text>
         </View>
 
         <View style={styles.features}>
-          {['Store Aadhaar, PAN, land records & more', 'Share access with family members', 'Encrypted — only your family can read'].map((f) => (
+          {['Store Aadhaar, PAN, land records & more', 'Share access with family members', 'Encrypted â€” only your family can read'].map((f) => (
             <View key={f} style={styles.featureRow}>
-              <Text style={styles.featureDot}>✓</Text>
+              <Text style={styles.featureDot}>âœ“</Text>
               <Text style={styles.featureText}>{f}</Text>
             </View>
           ))}

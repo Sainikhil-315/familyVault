@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useCallback } from 'react';
+﻿import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet,
-  SafeAreaView, FlatList, ActivityIndicator, Alert,
+  View, Text, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator, Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../../types/navigation';
 import { getNotifications, approveJoin, Notification } from '../../api/family.api';
@@ -99,7 +99,7 @@ export default function NotificationsScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>← Back</Text>
+          <Text style={styles.backText}>â† Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Join Requests</Text>
         <View style={{ width: 60 }} />
@@ -117,7 +117,7 @@ export default function NotificationsScreen({ navigation }: Props) {
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             <View style={styles.center}>
-              <Text style={styles.emptyIcon}>✅</Text>
+              <Text style={styles.emptyIcon}>âœ…</Text>
               <Text style={styles.emptyText}>No pending requests</Text>
             </View>
           }

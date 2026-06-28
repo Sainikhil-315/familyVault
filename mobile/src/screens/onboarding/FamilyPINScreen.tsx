@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, SafeAreaView, ActivityIndicator, Alert,
+  StyleSheet, ActivityIndicator, Alert,
   KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { signInWithCustomToken } from 'firebase/auth';
@@ -85,7 +86,7 @@ export default function FamilyPINScreen({ navigation, route }: Props) {
             <Text style={styles.label}>Family PIN</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter 4–6 digit PIN"
+              placeholder="Enter 4â€“6 digit PIN"
               placeholderTextColor={colors.textSecondary}
               secureTextEntry
               keyboardType="number-pad"

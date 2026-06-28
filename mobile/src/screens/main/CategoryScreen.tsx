@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+﻿import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
-  StyleSheet, SafeAreaView, ActivityIndicator, Alert,
+  StyleSheet, ActivityIndicator, Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { AppStackParamList } from '../../types/navigation';
@@ -53,14 +54,14 @@ export default function CategoryScreen({ navigation, route }: Props) {
       >
         <View style={styles.docIcon}>
           <Text style={styles.docIconText}>
-            {item.mimeType.includes('pdf') ? '📄' : '🖼️'}
+            {item.mimeType.includes('pdf') ? 'ðŸ“„' : 'ðŸ–¼ï¸'}
           </Text>
         </View>
         <View style={styles.docInfo}>
           <Text style={styles.docName} numberOfLines={1}>{item.fileName}</Text>
-          <Text style={styles.docMeta}>{formatBytes(item.fileSize)} · {formatDate(item.uploadedAt)}</Text>
+          <Text style={styles.docMeta}>{formatBytes(item.fileSize)} Â· {formatDate(item.uploadedAt)}</Text>
         </View>
-        <Text style={styles.chevron}>›</Text>
+        <Text style={styles.chevron}>â€º</Text>
       </TouchableOpacity>
     );
   }
@@ -69,7 +70,7 @@ export default function CategoryScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>← Back</Text>
+          <Text style={styles.backText}>â† Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{label}</Text>
         <TouchableOpacity onPress={() => navigation.navigate('DocumentUpload', { presetCategory: category })}>
@@ -89,7 +90,7 @@ export default function CategoryScreen({ navigation, route }: Props) {
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             <View style={styles.center}>
-              <Text style={styles.emptyIcon}>📂</Text>
+              <Text style={styles.emptyIcon}>ðŸ“‚</Text>
               <Text style={styles.emptyText}>No {label.toLowerCase()} documents yet</Text>
               <TouchableOpacity
                 style={styles.addBtn}

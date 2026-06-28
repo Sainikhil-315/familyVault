@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
+﻿import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../../types/navigation';
 import { useAuth } from '../../contexts/AuthContext';
@@ -37,12 +38,12 @@ export default function HomeScreen({ navigation }: Props) {
           style={styles.primaryCard}
           onPress={() => navigation.navigate('DocumentsHome')}
         >
-          <Text style={styles.primaryCardIcon}>📁</Text>
+          <Text style={styles.primaryCardIcon}>ðŸ“</Text>
           <View style={styles.primaryCardText}>
             <Text style={styles.primaryCardTitle}>Family Vault</Text>
-            <Text style={styles.primaryCardSub}>Identity · Property · Medical · and more</Text>
+            <Text style={styles.primaryCardSub}>Identity Â· Property Â· Medical Â· and more</Text>
           </View>
-          <Text style={styles.chevron}>›</Text>
+          <Text style={styles.chevron}>â€º</Text>
         </TouchableOpacity>
 
         {showUpload && (
@@ -50,7 +51,7 @@ export default function HomeScreen({ navigation }: Props) {
             style={styles.uploadCard}
             onPress={() => navigation.navigate('DocumentUpload')}
           >
-            <Text style={styles.uploadCardIcon}>⬆️</Text>
+            <Text style={styles.uploadCardIcon}>â¬†ï¸</Text>
             <Text style={styles.uploadCardText}>Upload Document</Text>
           </TouchableOpacity>
         )}
@@ -64,7 +65,7 @@ export default function HomeScreen({ navigation }: Props) {
                 style={styles.actionCard}
                 onPress={() => navigation.navigate('InviteMember')}
               >
-                <Text style={styles.actionIcon}>➕</Text>
+                <Text style={styles.actionIcon}>âž•</Text>
                 <Text style={styles.actionLabel}>Invite Member</Text>
               </TouchableOpacity>
 
@@ -72,7 +73,7 @@ export default function HomeScreen({ navigation }: Props) {
                 style={styles.actionCard}
                 onPress={() => navigation.navigate('Notifications')}
               >
-                <Text style={styles.actionIcon}>🔔</Text>
+                <Text style={styles.actionIcon}>ðŸ””</Text>
                 <Text style={styles.actionLabel}>Join Requests</Text>
               </TouchableOpacity>
 
@@ -80,7 +81,7 @@ export default function HomeScreen({ navigation }: Props) {
                 style={styles.actionCard}
                 onPress={() => navigation.navigate('Members')}
               >
-                <Text style={styles.actionIcon}>👥</Text>
+                <Text style={styles.actionIcon}>ðŸ‘¥</Text>
                 <Text style={styles.actionLabel}>Members</Text>
               </TouchableOpacity>
 
@@ -88,7 +89,7 @@ export default function HomeScreen({ navigation }: Props) {
                 style={styles.actionCard}
                 onPress={() => navigation.navigate('FamilySettings')}
               >
-                <Text style={styles.actionIcon}>⚙️</Text>
+                <Text style={styles.actionIcon}>âš™ï¸</Text>
                 <Text style={styles.actionLabel}>Settings</Text>
               </TouchableOpacity>
             </View>

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, SafeAreaView, ActivityIndicator, Alert,
+  StyleSheet, ActivityIndicator, Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../../types/navigation';
 import { inviteMember } from '../../api/family.api';
@@ -42,7 +43,7 @@ export default function InviteMemberScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>← Back</Text>
+          <Text style={styles.backText}>â† Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Invite Member</Text>
         <View style={{ width: 60 }} />
@@ -57,7 +58,7 @@ export default function InviteMemberScreen({ navigation }: Props) {
           <Text style={styles.label}>Phone Number</Text>
           <View style={styles.inputRow}>
             <View style={styles.prefix}>
-              <Text style={styles.prefixText}>🇮🇳 +91</Text>
+              <Text style={styles.prefixText}>ðŸ‡®ðŸ‡³ +91</Text>
             </View>
             <TextInput
               style={styles.input}
@@ -73,7 +74,7 @@ export default function InviteMemberScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.infoBox}>
-          <Text style={styles.infoTitle}>📋 How to complete the invite</Text>
+          <Text style={styles.infoTitle}>ðŸ“‹ How to complete the invite</Text>
           <Text style={styles.infoText}>1. Tap "Add Invitation" below</Text>
           <Text style={styles.infoText}>2. Share app download link with them (WhatsApp/SMS)</Text>
           <Text style={styles.infoText}>3. Tell them the Family PIN verbally or in person</Text>

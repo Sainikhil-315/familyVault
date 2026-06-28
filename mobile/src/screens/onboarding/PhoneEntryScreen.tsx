@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, SafeAreaView, ActivityIndicator, Alert,
+  StyleSheet, ActivityIndicator, Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../types/navigation';
 import { sendOtp } from '../../api/auth.api';
@@ -56,11 +57,11 @@ export default function PhoneEntryScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Enter your phone number</Text>
-        <Text style={styles.subtitle}>Members are verified via family PIN — no OTP cost</Text>
+        <Text style={styles.subtitle}>Members are verified via family PIN â€” no OTP cost</Text>
 
         <View style={styles.inputRow}>
           <View style={styles.prefix}>
-            <Text style={styles.prefixText}>🇮🇳 +91</Text>
+            <Text style={styles.prefixText}>ðŸ‡®ðŸ‡³ +91</Text>
           </View>
           <TextInput
             style={styles.input}

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  SafeAreaView, ScrollView, Alert, ActivityIndicator,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../../types/navigation';
 import { renameFamily, changeFamilyPin } from '../../api/family.api';
@@ -46,11 +46,11 @@ export default function FamilySettingsScreen({ navigation }: Props) {
   async function handleChangePin() {
     if (!familyId) return;
     if (!/^\d{4,6}$/.test(currentPin)) {
-      Alert.alert('Invalid PIN', 'Current PIN must be 4–6 digits.');
+      Alert.alert('Invalid PIN', 'Current PIN must be 4â€“6 digits.');
       return;
     }
     if (!/^\d{4,6}$/.test(newPin)) {
-      Alert.alert('Invalid PIN', 'New PIN must be 4–6 digits.');
+      Alert.alert('Invalid PIN', 'New PIN must be 4â€“6 digits.');
       return;
     }
     if (newPin !== confirmPin) {
@@ -79,7 +79,7 @@ export default function FamilySettingsScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backText}>← Back</Text>
+          <Text style={styles.backText}>â† Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Family Settings</Text>
         <View style={styles.backBtn} />
@@ -127,7 +127,7 @@ export default function FamilySettingsScreen({ navigation }: Props) {
           />
           <TextInput
             style={styles.input}
-            placeholder="New PIN (4–6 digits)"
+            placeholder="New PIN (4â€“6 digits)"
             placeholderTextColor={colors.textSecondary}
             value={newPin}
             onChangeText={setNewPin}

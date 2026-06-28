@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, Image, TouchableOpacity, StyleSheet,
-  SafeAreaView, ActivityIndicator, Alert, Platform, ScrollView,
+  View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Platform, ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import {
   cacheDirectory,
@@ -125,7 +125,7 @@ export default function DocumentViewScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Text style={styles.backText}>← Back</Text>
+          <Text style={styles.backText}>â† Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{doc.fileName}</Text>
         <TouchableOpacity
@@ -142,13 +142,13 @@ export default function DocumentViewScreen({ navigation, route }: Props) {
           <View style={styles.center}>
             <ActivityIndicator color={colors.primary} size="large" />
             <Text style={styles.statusText}>{viewState.message}</Text>
-            <Text style={styles.statusSub}>🔒 Decrypting on device</Text>
+            <Text style={styles.statusSub}>ðŸ”’ Decrypting on device</Text>
           </View>
         )}
 
         {viewState.status === 'error' && (
           <View style={styles.center}>
-            <Text style={styles.errorIcon}>⚠️</Text>
+            <Text style={styles.errorIcon}>âš ï¸</Text>
             <Text style={styles.errorText}>{viewState.message}</Text>
             <TouchableOpacity style={styles.retryBtn} onPress={load}>
               <Text style={styles.retryBtnText}>Try Again</Text>
@@ -182,7 +182,7 @@ export default function DocumentViewScreen({ navigation, route }: Props) {
 
         {viewState.status === 'pdf' && Platform.OS === 'android' && (
           <View style={styles.center}>
-            <Text style={styles.pdfIcon}>📄</Text>
+            <Text style={styles.pdfIcon}>ðŸ“„</Text>
             <Text style={styles.pdfFileName}>{doc.fileName}</Text>
             <Text style={styles.pdfSub}>
               Decrypted and ready. Tap Open to view in your PDF app.

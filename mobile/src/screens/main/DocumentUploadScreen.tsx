@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, SafeAreaView,
+  View, Text, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, ScrollView, Modal, FlatList,
   KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -21,13 +22,13 @@ type Props = {
 };
 
 const CATEGORIES = [
-  { key: 'identity',  label: 'Identity',  icon: '🪪' },
-  { key: 'property',  label: 'Property',  icon: '🏘️' },
-  { key: 'financial', label: 'Financial', icon: '💰' },
-  { key: 'medical',   label: 'Medical',   icon: '🏥' },
-  { key: 'education', label: 'Education', icon: '🎓' },
-  { key: 'vehicle',   label: 'Vehicles',  icon: '🚗' },
-  { key: 'other',     label: 'Other',     icon: '📄' },
+  { key: 'identity',  label: 'Identity',  icon: 'ðŸªª' },
+  { key: 'property',  label: 'Property',  icon: 'ðŸ˜ï¸' },
+  { key: 'financial', label: 'Financial', icon: 'ðŸ’°' },
+  { key: 'medical',   label: 'Medical',   icon: 'ðŸ¥' },
+  { key: 'education', label: 'Education', icon: 'ðŸŽ“' },
+  { key: 'vehicle',   label: 'Vehicles',  icon: 'ðŸš—' },
+  { key: 'other',     label: 'Other',     icon: 'ðŸ“„' },
 ] as const;
 
 interface FamilyMember {
@@ -140,14 +141,14 @@ export default function DocumentUploadScreen({ navigation, route }: Props) {
   const selectedCategory = CATEGORIES.find((c) => c.key === category);
   const selectedMember = members.find((m) => m.id === belongsTo);
   const belongsToLabel = belongsTo === 'family'
-    ? '👨‍👩‍👧‍👦 Entire Family'
-    : selectedMember ? `👤 ${selectedMember.name}` : 'Select...';
+    ? 'ðŸ‘¨â€ðŸ‘©â€ðŸ‘§â€ðŸ‘¦ Entire Family'
+    : selectedMember ? `ðŸ‘¤ ${selectedMember.name}` : 'Select...';
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>← Back</Text>
+          <Text style={styles.backText}>â† Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Upload Document</Text>
         <View style={{ width: 60 }} />
@@ -161,7 +162,7 @@ export default function DocumentUploadScreen({ navigation, route }: Props) {
           {selectedFile ? (
             <View style={styles.fileCard}>
               <Text style={styles.fileIcon}>
-                {selectedFile.mimeType.includes('pdf') ? '📄' : '🖼️'}
+                {selectedFile.mimeType.includes('pdf') ? 'ðŸ“„' : 'ðŸ–¼ï¸'}
               </Text>
               <View style={styles.fileInfo}>
                 <Text style={styles.fileName} numberOfLines={2}>{selectedFile.name}</Text>
@@ -170,17 +171,17 @@ export default function DocumentUploadScreen({ navigation, route }: Props) {
                 )}
               </View>
               <TouchableOpacity onPress={() => setSelectedFile(null)}>
-                <Text style={styles.removeText}>✕</Text>
+                <Text style={styles.removeText}>âœ•</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.fileButtons}>
               <TouchableOpacity style={styles.fileBtn} onPress={pickFile}>
-                <Text style={styles.fileBtnIcon}>📁</Text>
+                <Text style={styles.fileBtnIcon}>ðŸ“</Text>
                 <Text style={styles.fileBtnText}>Pick File</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.fileBtn} onPress={scanDocument}>
-                <Text style={styles.fileBtnIcon}>📷</Text>
+                <Text style={styles.fileBtnIcon}>ðŸ“·</Text>
                 <Text style={styles.fileBtnText}>Scan Doc</Text>
               </TouchableOpacity>
             </View>
@@ -192,18 +193,18 @@ export default function DocumentUploadScreen({ navigation, route }: Props) {
             <Text style={styles.selectorText}>
               {selectedCategory ? `${selectedCategory.icon} ${selectedCategory.label}` : 'Select category...'}
             </Text>
-            <Text style={styles.selectorChevron}>›</Text>
+            <Text style={styles.selectorChevron}>â€º</Text>
           </TouchableOpacity>
 
           {/* Assign to */}
           <Text style={styles.sectionLabel}>3. Assign To</Text>
           <TouchableOpacity style={styles.selector} onPress={() => setShowMemberModal(true)}>
             <Text style={styles.selectorText}>{belongsToLabel}</Text>
-            <Text style={styles.selectorChevron}>›</Text>
+            <Text style={styles.selectorChevron}>â€º</Text>
           </TouchableOpacity>
 
           <View style={styles.encryptNote}>
-            <Text style={styles.encryptIcon}>🔒</Text>
+            <Text style={styles.encryptIcon}>ðŸ”’</Text>
             <Text style={styles.encryptText}>
               Encrypted on device before upload. Only your family can read this file.
             </Text>
@@ -243,7 +244,7 @@ export default function DocumentUploadScreen({ navigation, route }: Props) {
                 <Text style={[styles.modalItemText, category === c.key && styles.modalItemTextSelected]}>
                   {c.label}
                 </Text>
-                {category === c.key && <Text style={styles.checkmark}>✓</Text>}
+                {category === c.key && <Text style={styles.checkmark}>âœ“</Text>}
               </TouchableOpacity>
             ))}
             <TouchableOpacity style={styles.modalCancel} onPress={() => setShowCategoryModal(false)}>
@@ -262,11 +263,11 @@ export default function DocumentUploadScreen({ navigation, route }: Props) {
               style={[styles.modalItem, belongsTo === 'family' && styles.modalItemSelected]}
               onPress={() => { setBelongsTo('family'); setShowMemberModal(false); }}
             >
-              <Text style={styles.modalItemIcon}>👨‍👩‍👧‍👦</Text>
+              <Text style={styles.modalItemIcon}>ðŸ‘¨â€ðŸ‘©â€ðŸ‘§â€ðŸ‘¦</Text>
               <Text style={[styles.modalItemText, belongsTo === 'family' && styles.modalItemTextSelected]}>
                 Entire Family
               </Text>
-              {belongsTo === 'family' && <Text style={styles.checkmark}>✓</Text>}
+              {belongsTo === 'family' && <Text style={styles.checkmark}>âœ“</Text>}
             </TouchableOpacity>
             {members.map((m) => (
               <TouchableOpacity
@@ -274,14 +275,14 @@ export default function DocumentUploadScreen({ navigation, route }: Props) {
                 style={[styles.modalItem, belongsTo === m.id && styles.modalItemSelected]}
                 onPress={() => { setBelongsTo(m.id); setShowMemberModal(false); }}
               >
-                <Text style={styles.modalItemIcon}>👤</Text>
+                <Text style={styles.modalItemIcon}>ðŸ‘¤</Text>
                 <View>
                   <Text style={[styles.modalItemText, belongsTo === m.id && styles.modalItemTextSelected]}>
                     {m.name}
                   </Text>
                   <Text style={styles.modalItemSub}>{m.phone}</Text>
                 </View>
-                {belongsTo === m.id && <Text style={styles.checkmark}>✓</Text>}
+                {belongsTo === m.id && <Text style={styles.checkmark}>âœ“</Text>}
               </TouchableOpacity>
             ))}
             <TouchableOpacity style={styles.modalCancel} onPress={() => setShowMemberModal(false)}>
