@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import { readAsStringAsync, EncodingType } from 'expo-file-system/legacy';
 import { encryptFile } from './encryption';
 import { getPresignedUploadUrl, saveDocumentMeta } from '../api/documents.api';
 
@@ -29,8 +29,8 @@ export async function uploadDocument(opts: UploadOptions): Promise<UploadResult>
   const { fileUri, fileName, mimeType, familyId, category, belongsTo } = opts;
 
   // 1. Read file as base64 then convert to ArrayBuffer
-  const base64 = await FileSystem.readAsStringAsync(fileUri, {
-    encoding: FileSystem.EncodingType.Base64,
+  const base64 = await readAsStringAsync(fileUri, {
+    encoding: EncodingType.Base64,
   });
   const fileBuffer = base64ToArrayBuffer(base64);
 
