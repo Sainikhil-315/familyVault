@@ -1,12 +1,19 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import {
-  View, Text, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator, Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, StyleSheet, FlatList, Alert } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../../types/navigation';
 import { getNotifications, approveJoin, Notification } from '../../api/family.api';
-import { colors, spacing, fontSize } from '../../theme';
+import {
+  Screen,
+  AppHeader,
+  Text,
+  Card,
+  Avatar,
+  Button,
+  EmptyState,
+  LoadingView,
+} from '../../components/ui';
+import { spacing } from '../../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<AppStackParamList, 'Notifications'>;
@@ -54,124 +61,73 @@ export default function NotificationsScreen({ navigation }: Props) {
     const date = new Date(item.createdAt).toLocaleDateString('en-IN');
 
     return (
-      <View style={styles.card}>
+      <Card style={styles.card}>
         <View style={styles.cardHeader}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{item.fromName.charAt(0).toUpperCase()}</Text>
-          </View>
+          <Avatar name={item.fromName} size={48} />
           <View style={styles.cardInfo}>
-            <Text style={styles.cardName}>{item.fromName}</Text>
-            <Text style={styles.cardPhone}>{item.fromPhone}</Text>
-            <Text style={styles.cardDate}>{date}</Text>
+            <Text variant="title">{item.fromName}</Text>
+            <Text variant="caption">{item.fromPhone}</Text>
+            <Text variant="caption">{date}</Text>
           </View>
         </View>
 
         <View style={styles.actions}>
-          <TouchableOpacity
-            style={[styles.rejectBtn, isActioning && styles.btnDisabled]}
+          <Button
+            title="Reject"
+            variant="danger"
+            size="md"
             onPress={() => handleAction(item.id, 'reject')}
             disabled={isActioning}
-          >
-            {isActioning ? (
-              <ActivityIndicator color={colors.error} size="small" />
-            ) : (
-              <Text style={styles.rejectText}>Reject</Text>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.approveBtn, isActioning && styles.btnDisabled]}
+            loading={isActioning}
+            style={styles.actionBtn}
+          />
+          <Button
+            title="Approve"
+            variant="primary"
+            size="md"
             onPress={() => handleAction(item.id, 'approve')}
             disabled={isActioning}
-          >
-            {isActioning ? (
-              <ActivityIndicator color={colors.white} size="small" />
-            ) : (
-              <Text style={styles.approveText}>Approve</Text>
-            )}
-          </TouchableOpacity>
+            loading={isActioning}
+            style={styles.actionBtn}
+          />
         </View>
-      </View>
+      </Card>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Join Requests</Text>
-        <View style={{ width: 60 }} />
-      </View>
-
+    <Screen
+      scroll={false}
+      padded={false}
+      header={<AppHeader title="Join Requests" onBack={() => navigation.goBack()} />}
+    >
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} />
-        </View>
+        <LoadingView />
       ) : (
         <FlatList
           data={notifications}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View style={styles.center}>
-              <Text style={styles.emptyIcon}>✅</Text>
-              <Text style={styles.emptyText}>No pending requests</Text>
-            </View>
+            <EmptyState
+              icon="checkmark-circle-outline"
+              title="No pending requests"
+              message="Join requests from family members will appear here."
+            />
           }
         />
       )}
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backText: { color: colors.primary, fontSize: fontSize.md, fontWeight: '500', width: 60 },
-  headerTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text },
-  list: { padding: spacing.lg, gap: spacing.md },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  cardHeader: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg },
-  avatar: {
-    width: 48, height: 48, borderRadius: 24,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  avatarText: { fontSize: fontSize.xl, fontWeight: '700', color: colors.primary },
-  cardInfo: { flex: 1 },
-  cardName: { fontSize: fontSize.lg, fontWeight: '600', color: colors.text },
-  cardPhone: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 2 },
-  cardDate: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 2 },
+  list: { padding: spacing.lg, gap: spacing.md, flexGrow: 1 },
+  card: { gap: spacing.lg },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  cardInfo: { flex: 1, gap: 2 },
   actions: { flexDirection: 'row', gap: spacing.sm },
-  rejectBtn: {
-    flex: 1, paddingVertical: spacing.sm, borderRadius: 10,
-    alignItems: 'center', borderWidth: 1.5, borderColor: colors.error,
-  },
-  approveBtn: {
-    flex: 1, paddingVertical: spacing.sm, borderRadius: 10,
-    alignItems: 'center', backgroundColor: colors.primary,
-  },
-  btnDisabled: { opacity: 0.5 },
-  rejectText: { color: colors.error, fontWeight: '600', fontSize: fontSize.md },
-  approveText: { color: colors.white, fontWeight: '600', fontSize: fontSize.md },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xxl },
-  emptyIcon: { fontSize: 48, marginBottom: spacing.md },
-  emptyText: { fontSize: fontSize.lg, color: colors.textSecondary },
+  actionBtn: { flex: 1 },
 });

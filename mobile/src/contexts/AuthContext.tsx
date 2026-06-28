@@ -6,6 +6,7 @@ import { firebaseAuth, firestore } from '../config/firebase';
 interface AuthState {
   user: User | null;
   familyId: string | null;
+  familyName: string | null;
   role: 'admin' | 'member' | null;
   canUpload: boolean;
   memberName: string | null;
@@ -21,30 +22,37 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 async function loadUserFamily(uid: string): Promise<{
   familyId: string | null;
+  familyName: string | null;
   role: 'admin' | 'member' | null;
   canUpload: boolean;
   memberName: string | null;
 }> {
   const userDoc = await getDoc(doc(firestore, 'users', uid));
   const familyIds: string[] = userDoc.data()?.familyIds ?? [];
-  if (familyIds.length === 0) return { familyId: null, role: null, canUpload: false, memberName: null };
+  if (familyIds.length === 0) return { familyId: null, familyName: null, role: null, canUpload: false, memberName: null };
 
   const familyId = familyIds[0];
-  const memberDoc = await getDoc(doc(firestore, 'families', familyId, 'members', uid));
+  const [memberDoc, familyDoc] = await Promise.all([
+    getDoc(doc(firestore, 'families', familyId, 'members', uid)),
+    getDoc(doc(firestore, 'families', familyId)),
+  ]);
+
   const role = (memberDoc.data()?.role ?? null) as 'admin' | 'member' | null;
   const canUpload = (memberDoc.data()?.canUpload ?? false) as boolean;
   const memberName = (memberDoc.data()?.name ?? null) as string | null;
+  const familyName = (familyDoc.data()?.name ?? null) as string | null;
 
   const status = memberDoc.data()?.status;
-  if (status !== 'active') return { familyId: null, role: null, canUpload: false, memberName: null };
+  if (status !== 'active') return { familyId: null, familyName: null, role: null, canUpload: false, memberName: null };
 
-  return { familyId, role, canUpload, memberName };
+  return { familyId, familyName, role, canUpload, memberName };
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
     familyId: null,
+    familyName: null,
     role: null,
     canUpload: false,
     memberName: null,
@@ -54,17 +62,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function refreshAuth() {
     const user = firebaseAuth.currentUser;
     if (!user) return;
-    const { familyId, role, canUpload, memberName } = await loadUserFamily(user.uid);
-    setState((prev) => ({ ...prev, familyId, role, canUpload, memberName }));
+    const { familyId, familyName, role, canUpload, memberName } = await loadUserFamily(user.uid);
+    setState((prev) => ({ ...prev, familyId, familyName, role, canUpload, memberName }));
   }
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
       if (user) {
-        const { familyId, role, canUpload, memberName } = await loadUserFamily(user.uid);
-        setState({ user, familyId, role, canUpload, memberName, loading: false });
+        const { familyId, familyName, role, canUpload, memberName } = await loadUserFamily(user.uid);
+        setState({ user, familyId, familyName, role, canUpload, memberName, loading: false });
       } else {
-        setState({ user: null, familyId: null, role: null, canUpload: false, memberName: null, loading: false });
+        setState({ user: null, familyId: null, familyName: null, role: null, canUpload: false, memberName: null, loading: false });
       }
     });
     return unsubscribe;

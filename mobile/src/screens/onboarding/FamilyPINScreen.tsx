@@ -1,10 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity,
-  StyleSheet, ActivityIndicator, Alert,
-  KeyboardAvoidingView, Platform, ScrollView,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, StyleSheet, Alert } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { signInWithCustomToken } from 'firebase/auth';
@@ -12,7 +7,8 @@ import { OnboardingStackParamList } from '../../types/navigation';
 import { verifyPin } from '../../api/family.api';
 import { submitJoinRequest } from '../../api/family.api';
 import { firebaseAuth } from '../../config/firebase';
-import { colors, spacing, fontSize } from '../../theme';
+import { Screen, AppHeader, Text, Button, Input } from '../../components/ui';
+import { spacing } from '../../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<OnboardingStackParamList, 'FamilyPIN'>;
@@ -60,87 +56,54 @@ export default function FamilyPINScreen({ navigation, route }: Props) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <Text style={styles.title}>Join {familyName}</Text>
-          <Text style={styles.subtitle}>Enter your name and the family PIN shared by the admin</Text>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Your Name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. Ravi Sharma"
-              placeholderTextColor={colors.textSecondary}
-              value={name}
-              onChangeText={setName}
-              maxLength={40}
-              autoFocus
-            />
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Family PIN</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter 4–6 digit PIN"
-              placeholderTextColor={colors.textSecondary}
-              secureTextEntry
-              keyboardType="number-pad"
-              maxLength={6}
-              value={pin}
-              onChangeText={(v) => setPin(v.replace(/\D/g, ''))}
-            />
-            <Text style={styles.hint}>Ask the family admin for this PIN</Text>
-          </View>
-        </ScrollView>
-
+    <Screen
+      header={<AppHeader title="Join Family" onBack={() => navigation.goBack()} />}
+      keyboardAvoiding
+      footer={
         <View style={styles.footer}>
-          <TouchableOpacity
-            style={[styles.button, !isValid && styles.buttonDisabled]}
+          <Button
+            title="Request to Join"
             onPress={handleSubmit}
-            disabled={!isValid || loading}
-          >
-            {loading ? (
-              <ActivityIndicator color={colors.white} />
-            ) : (
-              <Text style={styles.buttonText}>Request to Join</Text>
-            )}
-          </TouchableOpacity>
+            disabled={!isValid}
+            loading={loading}
+          />
         </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      }
+    >
+      <View style={styles.intro}>
+        <Text variant="h1">Join {familyName}</Text>
+        <Text variant="body" muted>
+          Enter your name and the family PIN shared by the admin
+        </Text>
+      </View>
+
+      <View style={styles.form}>
+        <Input
+          label="Your Name"
+          placeholder="e.g. Ravi Sharma"
+          value={name}
+          onChangeText={setName}
+          maxLength={40}
+          autoFocus
+        />
+
+        <Input
+          label="Family PIN"
+          placeholder="Enter 4–6 digit PIN"
+          secureTextEntry
+          keyboardType="number-pad"
+          maxLength={6}
+          value={pin}
+          onChangeText={(v) => setPin(v.replace(/\D/g, ''))}
+          hint="Ask the family admin for this PIN"
+        />
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { paddingHorizontal: spacing.xl, paddingTop: spacing.xxl, paddingBottom: spacing.md },
-  title: { fontSize: fontSize.xxl, fontWeight: '700', color: colors.text, marginBottom: spacing.sm },
-  subtitle: { fontSize: fontSize.md, color: colors.textSecondary, marginBottom: spacing.xl },
-  field: { marginBottom: spacing.lg },
-  label: { fontSize: fontSize.md, fontWeight: '600', color: colors.text, marginBottom: spacing.xs },
-  input: {
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: 12,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    fontSize: fontSize.md,
-    color: colors.text,
-    backgroundColor: colors.surface,
-  },
-  hint: { marginTop: spacing.xs, fontSize: fontSize.sm, color: colors.textSecondary },
-  footer: { padding: spacing.xl, paddingTop: 0 },
-  button: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: colors.white, fontSize: fontSize.lg, fontWeight: '600' },
+  intro: { gap: spacing.sm, marginBottom: spacing.xl },
+  form: { gap: spacing.lg },
+  footer: { padding: spacing.lg },
 });

@@ -1,62 +1,81 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../types/navigation';
-import { colors, spacing, fontSize } from '../../theme';
+import { Screen, Text, Button, IconChip } from '../../components/ui';
+import { colors, spacing, scaleFont } from '../../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<OnboardingStackParamList, 'Welcome'>;
 };
 
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+
+const FEATURES: { icon: IoniconName; text: string }[] = [
+  { icon: 'folder-open-outline', text: 'Store Aadhaar, PAN, land records & more' },
+  { icon: 'people-outline', text: 'Share access with family members' },
+  { icon: 'flash-outline', text: 'Access anytime, anywhere' },
+];
+
 export default function WelcomeScreen({ navigation }: Props) {
   return (
-    <SafeAreaView style={styles.container}>
+    <Screen
+      scroll={false}
+      padded
+      footer={
+        <View style={styles.footer}>
+          <Button title="Get Started" onPress={() => navigation.navigate('PhoneEntry')} />
+          <Text variant="caption" center style={styles.disclaimer}>
+            Admin registration requires phone verification
+          </Text>
+        </View>
+      }
+    >
       <View style={styles.content}>
-        <View style={styles.logoContainer}>
-          <Text style={styles.logoIcon}>🏠</Text>
-          <Text style={styles.logoText}>FamilyVault</Text>
-          <Text style={styles.tagline}>One vault. Every document. Your whole family.</Text>
+        <View style={styles.brand}>
+          <View style={styles.logoMark}>
+            <Ionicons name="home" size={scaleFont(40)} color={colors.primary} />
+          </View>
+          <Text variant="display" center style={styles.logoText}>
+            FamilyVault
+          </Text>
+          <Text variant="body" muted center>
+            One vault. Every document. Your whole family.
+          </Text>
         </View>
 
         <View style={styles.features}>
-          {['Store Aadhaar, PAN, land records & more', 'Share access with family members', 'Encrypted — only your family can read'].map((f) => (
-            <View key={f} style={styles.featureRow}>
-              <Text style={styles.featureDot}>✓</Text>
-              <Text style={styles.featureText}>{f}</Text>
+          {FEATURES.map((f) => (
+            <View key={f.text} style={styles.featureRow}>
+              <IconChip icon={f.icon} size={44} />
+              <Text variant="bodyMedium" style={styles.featureText}>
+                {f.text}
+              </Text>
             </View>
           ))}
         </View>
       </View>
-
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('PhoneEntry')}>
-          <Text style={styles.buttonText}>Get Started</Text>
-        </TouchableOpacity>
-        <Text style={styles.disclaimer}>Admin registration requires phone verification</Text>
-      </View>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { flex: 1, justifyContent: 'center', paddingHorizontal: spacing.xl },
-  logoContainer: { alignItems: 'center', marginBottom: spacing.xxl },
-  logoIcon: { fontSize: 64, marginBottom: spacing.md },
-  logoText: { fontSize: 32, fontWeight: '700', color: colors.text, marginBottom: spacing.sm },
-  tagline: { fontSize: fontSize.md, color: colors.textSecondary, textAlign: 'center' },
-  features: { gap: spacing.md },
-  featureRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-  featureDot: { color: colors.primary, fontWeight: '700', fontSize: fontSize.md },
-  featureText: { color: colors.text, fontSize: fontSize.md, flex: 1 },
-  footer: { padding: spacing.xl, gap: spacing.sm },
-  button: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
-    borderRadius: 12,
+  content: { flex: 1, justifyContent: 'center', gap: spacing.xxl },
+  brand: { alignItems: 'center', gap: spacing.sm },
+  logoMark: {
+    width: scaleFont(80),
+    height: scaleFont(80),
+    borderRadius: scaleFont(24),
+    backgroundColor: colors.primaryLight,
+    justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: spacing.sm,
   },
-  buttonText: { color: colors.white, fontSize: fontSize.lg, fontWeight: '600' },
-  disclaimer: { color: colors.textSecondary, fontSize: fontSize.sm, textAlign: 'center' },
+  logoText: { marginBottom: spacing.xs },
+  features: { gap: spacing.md },
+  featureRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  featureText: { flex: 1 },
+  footer: { padding: spacing.lg, gap: spacing.md },
+  disclaimer: { color: colors.textTertiary },
 });

@@ -1,9 +1,5 @@
-﻿import React, { useState, useRef } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity,
-  StyleSheet, ActivityIndicator, Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState, useRef } from 'react';
+import { View, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { signInWithCustomToken } from 'firebase/auth';
@@ -11,7 +7,8 @@ import { OnboardingStackParamList } from '../../types/navigation';
 import { verifyOtp, sendOtp } from '../../api/auth.api';
 import { firebaseAuth } from '../../config/firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { colors, spacing, fontSize } from '../../theme';
+import { Screen, AppHeader, Text, Button } from '../../components/ui';
+import { colors, spacing, radius, scaleFont } from '../../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<OnboardingStackParamList, 'OTP'>;
@@ -70,16 +67,40 @@ export default function OTPScreen({ navigation, route }: Props) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <Screen
+      scroll={false}
+      keyboardAvoiding
+      header={<AppHeader onBack={() => navigation.goBack()} />}
+      footer={
+        <View style={styles.footer}>
+          <Button
+            title="Verify"
+            onPress={handleVerify}
+            loading={loading}
+            disabled={otp.length !== 6}
+          />
+        </View>
+      }
+    >
       <View style={styles.content}>
-        <Text style={styles.title}>Enter verification code</Text>
-        <Text style={styles.subtitle}>Sent to {phone}</Text>
+        <View style={styles.intro}>
+          <Text variant="h1">Enter verification code</Text>
+          <Text variant="body" muted>
+            Sent to {phone}
+          </Text>
+        </View>
 
-        <TouchableOpacity style={styles.otpBox} onPress={() => inputRef.current?.focus()}>
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.otpBox}
+          onPress={() => inputRef.current?.focus()}
+        >
           <View style={styles.otpDigits}>
             {Array.from({ length: 6 }).map((_, i) => (
               <View key={i} style={[styles.digit, otp.length === i && styles.digitActive]}>
-                <Text style={styles.digitText}>{otp[i] ?? ''}</Text>
+                <Text variant="h1" style={styles.digitText}>
+                  {otp[i] ?? ''}
+                </Text>
               </View>
             ))}
           </View>
@@ -98,58 +119,36 @@ export default function OTPScreen({ navigation, route }: Props) {
         />
 
         <TouchableOpacity onPress={handleResend} disabled={resendCooldown > 0}>
-          <Text style={[styles.resend, resendCooldown > 0 && styles.resendDisabled]}>
+          <Text
+            variant="bodyMedium"
+            center
+            color={resendCooldown > 0 ? colors.textTertiary : colors.primary}
+          >
             {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
           </Text>
         </TouchableOpacity>
       </View>
-
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.button, otp.length !== 6 && styles.buttonDisabled]}
-          onPress={handleVerify}
-          disabled={otp.length !== 6 || loading}
-        >
-          {loading ? (
-            <ActivityIndicator color={colors.white} />
-          ) : (
-            <Text style={styles.buttonText}>Verify</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { flex: 1, paddingHorizontal: spacing.xl, paddingTop: spacing.xxl },
-  title: { fontSize: fontSize.xxl, fontWeight: '700', color: colors.text, marginBottom: spacing.sm },
-  subtitle: { fontSize: fontSize.md, color: colors.textSecondary, marginBottom: spacing.xl },
-  otpBox: { marginBottom: spacing.md },
+  content: { flex: 1, paddingTop: spacing.xl, gap: spacing.xl },
+  intro: { gap: spacing.sm },
+  otpBox: { alignItems: 'center' },
   otpDigits: { flexDirection: 'row', gap: spacing.sm, justifyContent: 'center' },
   digit: {
     width: 48,
     height: 56,
     borderWidth: 1.5,
     borderColor: colors.border,
-    borderRadius: 10,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surface,
   },
   digitActive: { borderColor: colors.primary },
-  digitText: { fontSize: fontSize.xl, fontWeight: '600', color: colors.text },
+  digitText: { fontSize: scaleFont(22) },
   hiddenInput: { position: 'absolute', opacity: 0, height: 0 },
-  resend: { textAlign: 'center', color: colors.primary, fontSize: fontSize.md, fontWeight: '500' },
-  resendDisabled: { color: colors.textSecondary },
-  footer: { padding: spacing.xl },
-  button: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: colors.white, fontSize: fontSize.lg, fontWeight: '600' },
+  footer: { padding: spacing.lg },
 });

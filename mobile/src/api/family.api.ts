@@ -1,9 +1,9 @@
 import { api } from './client';
 
-export async function createFamily(familyName: string, pin: string): Promise<string> {
+export async function createFamily(familyName: string, pin: string, adminName: string): Promise<string> {
   const res = await api.post<{ success: boolean; data: { familyId: string } }>(
     '/api/family/create',
-    { familyName, pin }
+    { familyName, pin, adminName }
   );
   return res.data.data.familyId;
 }

@@ -1,3 +1,4 @@
+import { NavigatorScreenParams } from '@react-navigation/native';
 import { DocumentMeta } from '../api/documents.api';
 
 export type OnboardingStackParamList = {
@@ -10,15 +11,23 @@ export type OnboardingStackParamList = {
   JoinPending: undefined;
 };
 
-export type AppStackParamList = {
+export type TabParamList = {
   Home: undefined;
-  InviteMember: undefined;
-  Notifications: undefined;
-  DocumentsHome: undefined;
+  Vault: undefined;
+  Profile: undefined;
+};
+
+// Root stack — contains the tab navigator + all full-screen pushed screens
+export type RootStackParamList = {
+  MainTabs: NavigatorScreenParams<TabParamList>;
   Category: { category: string; label: string };
   DocumentUpload: { presetCategory?: string } | undefined;
   DocumentView: { doc: DocumentMeta };
+  InviteMember: undefined;
+  Notifications: undefined;
   Members: undefined;
-  Profile: undefined;
   FamilySettings: undefined;
 };
+
+// Backward-compat alias so existing typed props still compile
+export type AppStackParamList = RootStackParamList;

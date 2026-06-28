@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Platform, ScrollView,
+  View, Image, TouchableOpacity, StyleSheet, Alert, Platform, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
@@ -17,7 +17,8 @@ import { AppStackParamList } from '../../types/navigation';
 import { getDownloadUrl } from '../../api/documents.api';
 import { decryptFile, arrayBufferToBase64 } from '../../services/encryption';
 import { useAuth } from '../../contexts/AuthContext';
-import { colors, spacing, fontSize } from '../../theme';
+import { Text, LoadingView, ErrorView, EmptyState } from '../../components/ui';
+import { colors, spacing, layout } from '../../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<AppStackParamList, 'DocumentView'>;
@@ -90,7 +91,7 @@ export default function DocumentViewScreen({ navigation, route }: Props) {
       const localUri = isCacheValid
         ? cacheUri
         : await (async () => {
-            setViewState({ status: 'loading', message: 'Decrypting document...' });
+            setViewState({ status: 'loading', message: 'Loading document...' });
             return fetchAndDecrypt(doc.r2Key, familyId, doc.fileName, doc.mimeType);
           })();
 
@@ -124,35 +125,34 @@ export default function DocumentViewScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Text style={styles.backText}>← Back</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} hitSlop={layout.hitSlop}>
+          <Text variant="bodyMedium" color={colors.primary}>‹ Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>{doc.fileName}</Text>
+        <Text variant="bodyMedium" numberOfLines={1} center style={styles.headerTitle}>
+          {doc.fileName}
+        </Text>
         <TouchableOpacity
           onPress={handleShare}
-          style={styles.headerBtn}
+          style={[styles.headerBtn, styles.headerBtnRight]}
           disabled={!isReady}
+          hitSlop={layout.hitSlop}
         >
-          <Text style={[styles.shareText, !isReady && styles.shareTextDisabled]}>Share</Text>
+          <Text variant="bodyMedium" color={isReady ? colors.primary : colors.textTertiary}>
+            Share
+          </Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.content}>
         {viewState.status === 'loading' && (
-          <View style={styles.center}>
-            <ActivityIndicator color={colors.primary} size="large" />
-            <Text style={styles.statusText}>{viewState.message}</Text>
-            <Text style={styles.statusSub}>🔒 Decrypting on device</Text>
+          <View style={styles.stateWrap}>
+            <LoadingView message={viewState.message} />
           </View>
         )}
 
         {viewState.status === 'error' && (
-          <View style={styles.center}>
-            <Text style={styles.errorIcon}>⚠️</Text>
-            <Text style={styles.errorText}>{viewState.message}</Text>
-            <TouchableOpacity style={styles.retryBtn} onPress={load}>
-              <Text style={styles.retryBtnText}>Try Again</Text>
-            </TouchableOpacity>
+          <View style={styles.stateWrap}>
+            <ErrorView message={viewState.message} onRetry={load} />
           </View>
         )}
 
@@ -181,15 +181,14 @@ export default function DocumentViewScreen({ navigation, route }: Props) {
         )}
 
         {viewState.status === 'pdf' && Platform.OS === 'android' && (
-          <View style={styles.center}>
-            <Text style={styles.pdfIcon}>📄</Text>
-            <Text style={styles.pdfFileName}>{doc.fileName}</Text>
-            <Text style={styles.pdfSub}>
-              Decrypted and ready. Tap Open to view in your PDF app.
-            </Text>
-            <TouchableOpacity style={styles.openBtn} onPress={handleShare}>
-              <Text style={styles.openBtnText}>Open PDF</Text>
-            </TouchableOpacity>
+          <View style={styles.stateWrap}>
+            <EmptyState
+              icon="document-text-outline"
+              title={doc.fileName}
+              message="Tap Open to view in your PDF app."
+              actionLabel="Open PDF"
+              onAction={handleShare}
+            />
           </View>
         )}
       </View>
@@ -198,45 +197,23 @@ export default function DocumentViewScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: colors.black },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    minHeight: layout.headerHeight,
     backgroundColor: colors.background,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  headerBtn: { width: 60 },
-  backText: { color: colors.primary, fontSize: fontSize.md, fontWeight: '500' },
-  headerTitle: { flex: 1, fontSize: fontSize.md, fontWeight: '600', color: colors.text, textAlign: 'center' },
-  shareText: { color: colors.primary, fontSize: fontSize.md, fontWeight: '500', textAlign: 'right' },
-  shareTextDisabled: { color: colors.textSecondary },
+  headerBtn: { minWidth: 64 },
+  headerBtnRight: { alignItems: 'flex-end' },
+  headerTitle: { flex: 1 },
   content: { flex: 1 },
   webview: { flex: 1 },
-  imageContainer: { flexGrow: 1, justifyContent: 'center', backgroundColor: '#000' },
+  imageContainer: { flexGrow: 1, justifyContent: 'center', backgroundColor: colors.black },
   image: { width: '100%', height: undefined, aspectRatio: 1, maxHeight: 800 },
-  center: {
-    flex: 1, justifyContent: 'center', alignItems: 'center',
-    padding: spacing.xxl, backgroundColor: colors.background, gap: spacing.md,
-  },
-  statusText: { fontSize: fontSize.md, color: colors.text, fontWeight: '500' },
-  statusSub: { fontSize: fontSize.sm, color: colors.textSecondary },
-  errorIcon: { fontSize: 48 },
-  errorText: { fontSize: fontSize.md, color: colors.text, textAlign: 'center', lineHeight: 22 },
-  retryBtn: {
-    backgroundColor: colors.primary, paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.sm, borderRadius: 10,
-  },
-  retryBtnText: { color: colors.white, fontWeight: '600', fontSize: fontSize.md },
-  pdfIcon: { fontSize: 64 },
-  pdfFileName: { fontSize: fontSize.lg, fontWeight: '600', color: colors.text, textAlign: 'center' },
-  pdfSub: { fontSize: fontSize.md, color: colors.textSecondary, textAlign: 'center', lineHeight: 22 },
-  openBtn: {
-    backgroundColor: colors.primary, paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md, borderRadius: 12,
-  },
-  openBtnText: { color: colors.white, fontWeight: '600', fontSize: fontSize.lg },
+  stateWrap: { flex: 1, backgroundColor: colors.background },
 });

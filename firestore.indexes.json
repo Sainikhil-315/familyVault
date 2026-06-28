@@ -10,17 +10,20 @@
       ]
     },
     {
-      "collectionGroup": "invitedNumbers",
-      "queryScope": "COLLECTION_GROUP",
+      "collectionGroup": "documents",
+      "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "phone", "order": "ASCENDING" }
+        { "fieldPath": "familyId", "order": "ASCENDING" },
+        { "fieldPath": "category", "order": "ASCENDING" },
+        { "fieldPath": "uploadedAt", "order": "DESCENDING" }
       ]
     },
     {
-      "collectionGroup": "members",
+      "collectionGroup": "documents",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "status", "order": "ASCENDING" }
+        { "fieldPath": "familyId", "order": "ASCENDING" },
+        { "fieldPath": "uploadedAt", "order": "DESCENDING" }
       ]
     }
   ],

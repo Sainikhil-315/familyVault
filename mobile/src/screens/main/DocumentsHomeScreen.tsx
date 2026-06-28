@@ -1,38 +1,44 @@
 import React from 'react';
-import {
-  View, Text, TouchableOpacity,
-  StyleSheet, FlatList,
-} from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AppStackParamList } from '../../types/navigation';
-import { colors, spacing, fontSize } from '../../theme';
+import { Ionicons } from '@expo/vector-icons';
+import { RootStackParamList } from '../../types/navigation';
+import { Text } from '../../components/ui';
+import { colors, spacing, radius, shadows, scaleFont } from '../../theme';
+import { TAB_SCROLL_PADDING } from '../../navigation';
 
-type Props = {
-  navigation: NativeStackNavigationProp<AppStackParamList, 'DocumentsHome'>;
+type Nav = NativeStackNavigationProp<RootStackParamList>;
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+
+const CATEGORIES: { key: string; label: string; icon: IoniconName; sub: string; color: string }[] = [
+  { key: 'identity',  label: 'Identity',   icon: 'card-outline',          sub: 'Aadhaar, PAN, Passport', color: '#E8F0FE' },
+  { key: 'property',  label: 'Property',   icon: 'home-outline',          sub: 'Land records, Deeds',     color: '#FEF3C7' },
+  { key: 'financial', label: 'Financial',  icon: 'wallet-outline',        sub: 'Insurance, Passbooks',    color: '#DCFCE7' },
+  { key: 'medical',   label: 'Medical',    icon: 'medkit-outline',        sub: 'Reports, Prescriptions',  color: '#FCE7F3' },
+  { key: 'education', label: 'Education',  icon: 'school-outline',        sub: 'Degrees, Marksheets',     color: '#FDE8D8' },
+  { key: 'vehicle',   label: 'Vehicles',   icon: 'car-outline',           sub: 'RC book, Driving license', color: '#E0F2FE' },
+  { key: 'other',     label: 'Other',      icon: 'document-text-outline', sub: 'Ration card, Misc',       color: '#F3E8FF' },
+];
+
+const ICON_COLOR: Record<string, string> = {
+  identity: '#4F6DD6',
+  property: '#D97706',
+  financial: '#16A34A',
+  medical: '#DB2777',
+  education: '#EA580C',
+  vehicle: '#0284C7',
+  other: '#7C3AED',
 };
 
-const CATEGORIES = [
-  { key: 'identity',  label: 'Identity',   icon: '🪪', sub: 'Aadhaar, PAN, Passport' },
-  { key: 'property',  label: 'Property',   icon: '🏘️', sub: 'Land records, Deeds' },
-  { key: 'financial', label: 'Financial',  icon: '💰', sub: 'Insurance, Passbooks' },
-  { key: 'medical',   label: 'Medical',    icon: '🏥', sub: 'Reports, Prescriptions' },
-  { key: 'education', label: 'Education',  icon: '🎓', sub: 'Degrees, Marksheets' },
-  { key: 'vehicle',   label: 'Vehicles',   icon: '🚗', sub: 'RC book, Driving license' },
-  { key: 'other',     label: 'Other',      icon: '📄', sub: 'Ration card, Misc' },
-] as const;
+export default function DocumentsHomeScreen() {
+  const navigation = useNavigation<Nav>();
 
-export default function DocumentsHomeScreen({ navigation }: Props) {
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Family Vault</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('DocumentUpload')}>
-          <Text style={styles.uploadText}>+ Upload</Text>
-        </TouchableOpacity>
+        <Text variant="h2">Family Vault</Text>
       </View>
 
       <FlatList
@@ -41,14 +47,18 @@ export default function DocumentsHomeScreen({ navigation }: Props) {
         numColumns={2}
         contentContainerStyle={styles.grid}
         columnWrapperStyle={styles.row}
+        showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <TouchableOpacity
+            activeOpacity={0.85}
             style={styles.card}
             onPress={() => navigation.navigate('Category', { category: item.key, label: item.label })}
           >
-            <Text style={styles.cardIcon}>{item.icon}</Text>
-            <Text style={styles.cardLabel}>{item.label}</Text>
-            <Text style={styles.cardSub}>{item.sub}</Text>
+            <View style={[styles.iconWrap, { backgroundColor: item.color }]}>
+              <Ionicons name={item.icon} size={scaleFont(26)} color={ICON_COLOR[item.key]} />
+            </View>
+            <Text variant="bodyMedium" style={styles.cardLabel}>{item.label}</Text>
+            <Text variant="caption" numberOfLines={2}>{item.sub}</Text>
           </TouchableOpacity>
         )}
       />
@@ -63,25 +73,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
   },
-  backText: { color: colors.primary, fontSize: fontSize.md, fontWeight: '500', width: 60 },
-  headerTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text },
-  uploadText: { color: colors.primary, fontSize: fontSize.md, fontWeight: '600', width: 70, textAlign: 'right' },
-  grid: { padding: spacing.md },
+  grid: { paddingHorizontal: spacing.md, paddingBottom: TAB_SCROLL_PADDING },
   row: { gap: spacing.md, marginBottom: spacing.md },
   card: {
     flex: 1,
     backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: spacing.lg,
-    borderWidth: 1,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    minHeight: 120,
+    padding: spacing.md,
+    minHeight: 150,
+    gap: spacing.xs,
+    ...shadows.sm,
   },
-  cardIcon: { fontSize: 32, marginBottom: spacing.sm },
-  cardLabel: { fontSize: fontSize.md, fontWeight: '700', color: colors.text, marginBottom: spacing.xs },
-  cardSub: { fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 18 },
+  iconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  cardLabel: { marginTop: 2 },
 });

@@ -1,15 +1,27 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import {
-  View, Text, FlatList, TouchableOpacity,
-  StyleSheet, ActivityIndicator, Alert,
-} from 'react-native';
+import { FlatList, Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { AppStackParamList } from '../../types/navigation';
 import { listDocuments, DocumentMeta } from '../../api/documents.api';
 import { useAuth } from '../../contexts/AuthContext';
-import { colors, spacing, fontSize } from '../../theme';
+import { Ionicons } from '@expo/vector-icons';
+import { AppHeader, ListRow, IconChip, LoadingView, EmptyState } from '../../components/ui';
+import { colors, spacing } from '../../theme';
+
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+
+const MIME_ICONS: Record<string, IoniconName> = {
+  pdf: 'document-text-outline',
+  image: 'image-outline',
+};
+
+function getMimeIcon(mimeType: string): IoniconName {
+  if (mimeType.includes('pdf')) return MIME_ICONS.pdf;
+  if (mimeType.includes('image')) return MIME_ICONS.image;
+  return 'document-outline';
+}
 
 type Props = {
   navigation: NativeStackNavigationProp<AppStackParamList, 'Category'>;
@@ -48,57 +60,39 @@ export default function CategoryScreen({ navigation, route }: Props) {
 
   function renderItem({ item }: { item: DocumentMeta }) {
     return (
-      <TouchableOpacity
-        style={styles.docRow}
+      <ListRow
+        title={item.fileName}
+        subtitle={`${formatBytes(item.fileSize)} · ${formatDate(item.uploadedAt)}`}
+        leading={<IconChip icon={getMimeIcon(item.mimeType)} size={44} />}
+        showChevron
         onPress={() => navigation.navigate('DocumentView', { doc: item })}
-      >
-        <View style={styles.docIcon}>
-          <Text style={styles.docIconText}>
-            {item.mimeType.includes('pdf') ? '📄' : '🖼️'}
-          </Text>
-        </View>
-        <View style={styles.docInfo}>
-          <Text style={styles.docName} numberOfLines={1}>{item.fileName}</Text>
-          <Text style={styles.docMeta}>{formatBytes(item.fileSize)} · {formatDate(item.uploadedAt)}</Text>
-        </View>
-        <Text style={styles.chevron}>›</Text>
-      </TouchableOpacity>
+      />
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{label}</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('DocumentUpload', { presetCategory: category })}>
-          <Text style={styles.uploadText}>+ Add</Text>
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <AppHeader
+        title={label}
+        onBack={() => navigation.goBack()}
+      />
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} />
-        </View>
+        <LoadingView />
       ) : (
         <FlatList
           data={docs}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View style={styles.center}>
-              <Text style={styles.emptyIcon}>📂</Text>
-              <Text style={styles.emptyText}>No {label.toLowerCase()} documents yet</Text>
-              <TouchableOpacity
-                style={styles.addBtn}
-                onPress={() => navigation.navigate('DocumentUpload', { presetCategory: category })}
-              >
-                <Text style={styles.addBtnText}>Upload First Document</Text>
-              </TouchableOpacity>
-            </View>
+            <EmptyState
+              icon="folder-open-outline"
+              title={`No ${label.toLowerCase()} documents yet`}
+              actionLabel="Upload First Document"
+              onAction={() => navigation.navigate('DocumentUpload', { presetCategory: category })}
+            />
           }
         />
       )}
@@ -108,41 +102,5 @@ export default function CategoryScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backText: { color: colors.primary, fontSize: fontSize.md, fontWeight: '500', width: 60 },
-  headerTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text },
-  uploadText: { color: colors.primary, fontSize: fontSize.md, fontWeight: '600', width: 60, textAlign: 'right' },
-  list: { padding: spacing.md },
-  docRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: spacing.md,
-  },
-  docIcon: {
-    width: 44, height: 44, borderRadius: 10,
-    backgroundColor: colors.surface,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  docIconText: { fontSize: 22 },
-  docInfo: { flex: 1 },
-  docName: { fontSize: fontSize.md, fontWeight: '500', color: colors.text },
-  docMeta: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 2 },
-  chevron: { fontSize: 20, color: colors.textSecondary },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xxl, gap: spacing.md },
-  emptyIcon: { fontSize: 48 },
-  emptyText: { fontSize: fontSize.md, color: colors.textSecondary, textAlign: 'center' },
-  addBtn: { backgroundColor: colors.primary, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: 10 },
-  addBtnText: { color: colors.white, fontWeight: '600', fontSize: fontSize.md },
+  list: { flexGrow: 1, padding: spacing.lg, gap: spacing.xs },
 });

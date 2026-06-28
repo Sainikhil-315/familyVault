@@ -1,99 +1,131 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AppStackParamList } from '../../types/navigation';
+import { Ionicons } from '@expo/vector-icons';
+import { RootStackParamList } from '../../types/navigation';
 import { useAuth } from '../../contexts/AuthContext';
-import { colors, spacing, fontSize, radius } from '../../theme';
+import { listDocuments, DocumentMeta } from '../../api/documents.api';
+import { Text, Avatar, SectionLabel, Icon, IconName } from '../../components/ui';
+import { colors, spacing, radius, shadows, scaleFont } from '../../theme';
+import { TAB_SCROLL_PADDING } from '../../navigation';
 
-type Props = {
-  navigation: NativeStackNavigationProp<AppStackParamList, 'Home'>;
+type Nav = NativeStackNavigationProp<RootStackParamList>;
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+
+function formatDate(ms: number): string {
+  return new Date(ms).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+const CATEGORY_ICONS: Record<string, IoniconName> = {
+  identity: 'card-outline',
+  property: 'home-outline',
+  financial: 'wallet-outline',
+  medical: 'medkit-outline',
+  education: 'school-outline',
+  vehicle: 'car-outline',
+  other: 'document-text-outline',
 };
 
-export default function HomeScreen({ navigation }: Props) {
-  const { role, canUpload, memberName, user } = useAuth();
+export default function HomeScreen() {
+  const navigation = useNavigation<Nav>();
+  const { role, canUpload, memberName, familyName, familyId } = useAuth();
   const isAdmin = role === 'admin';
   const showUpload = isAdmin || canUpload;
-  const greeting = memberName ?? user?.phoneNumber ?? 'there';
+
+  const [recentDocs, setRecentDocs] = useState<DocumentMeta[]>([]);
+  const [loadingDocs, setLoadingDocs] = useState(false);
+
+  const firstName = memberName?.split(' ')[0] ?? 'there';
+
+  const fetchRecent = useCallback(async () => {
+    if (!familyId) return;
+    setLoadingDocs(true);
+    try {
+      const docs = await listDocuments(familyId);
+      setRecentDocs(docs.slice(0, 5));
+    } catch {
+      // silently fail — recent docs are non-critical
+    } finally {
+      setLoadingDocs(false);
+    }
+  }, [familyId]);
+
+  useEffect(() => { fetchRecent(); }, [fetchRecent]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.logo}>FamilyVault</Text>
-          <Text style={styles.greeting}>Hi, {greeting}</Text>
+          <Text variant="h2">Good day, {firstName}</Text>
+          {familyName ? (
+            <Text variant="caption" color={colors.primary}>{familyName}</Text>
+          ) : null}
         </View>
-        <TouchableOpacity
-          style={styles.profileBtn}
-          onPress={() => navigation.navigate('Profile')}
-        >
-          <Text style={styles.profileInitial}>{greeting.charAt(0).toUpperCase()}</Text>
-        </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Documents */}
-        <Text style={styles.sectionTitle}>Documents</Text>
-        <TouchableOpacity
-          style={styles.primaryCard}
-          onPress={() => navigation.navigate('DocumentsHome')}
-        >
-          <Text style={styles.primaryCardIcon}>📁</Text>
-          <View style={styles.primaryCardText}>
-            <Text style={styles.primaryCardTitle}>Family Vault</Text>
-            <Text style={styles.primaryCardSub}>Identity · Property · Medical · and more</Text>
-          </View>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
-
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Upload CTA */}
         {showUpload && (
           <TouchableOpacity
+            activeOpacity={0.88}
             style={styles.uploadCard}
-            onPress={() => navigation.navigate('DocumentUpload')}
+            onPress={() => navigation.navigate('DocumentUpload', undefined)}
           >
-            <Text style={styles.uploadCardIcon}>⬆️</Text>
-            <Text style={styles.uploadCardText}>Upload Document</Text>
+            <View style={styles.uploadIconWrap}>
+              <Icon name="cloud-upload-outline" size={26} color={colors.white} />
+            </View>
+            <View style={styles.uploadText}>
+              <Text variant="bodyMedium" color={colors.white}>Upload Document</Text>
+              <Text variant="caption" color="rgba(255,255,255,0.75)">Add to family vault</Text>
+            </View>
+            <Icon name="chevron-forward" size={20} color="rgba(255,255,255,0.8)" />
           </TouchableOpacity>
         )}
 
-        {/* Admin section */}
-        {isAdmin && (
-          <>
-            <Text style={styles.sectionTitle}>Admin</Text>
-            <View style={styles.adminGrid}>
-              <TouchableOpacity
-                style={styles.actionCard}
-                onPress={() => navigation.navigate('InviteMember')}
-              >
-                <Text style={styles.actionIcon}>➕</Text>
-                <Text style={styles.actionLabel}>Invite Member</Text>
-              </TouchableOpacity>
+        {/* Recent documents */}
+        <SectionLabel>Recent Documents</SectionLabel>
 
+        {!loadingDocs && recentDocs.length === 0 ? (
+          <View style={styles.emptyDocs}>
+            <Ionicons name="folder-open-outline" size={40} color={colors.textTertiary} />
+            <Text variant="caption" center style={styles.emptyText}>
+              No documents yet.{showUpload ? ' Upload one to get started.' : ''}
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.docList}>
+            {recentDocs.map((doc) => (
               <TouchableOpacity
-                style={styles.actionCard}
-                onPress={() => navigation.navigate('Notifications')}
+                key={doc.id}
+                activeOpacity={0.7}
+                style={styles.docRow}
+                onPress={() => navigation.navigate('DocumentView', { doc })}
               >
-                <Text style={styles.actionIcon}>🔔</Text>
-                <Text style={styles.actionLabel}>Join Requests</Text>
+                <View style={styles.docIcon}>
+                  <Ionicons
+                    name={doc.mimeType.includes('pdf') ? 'document-text-outline' : 'image-outline'}
+                    size={22}
+                    color={colors.primary}
+                  />
+                </View>
+                <View style={styles.docInfo}>
+                  <Text variant="bodyMedium" numberOfLines={1}>{doc.fileName}</Text>
+                  <Text variant="caption">
+                    {doc.category.charAt(0).toUpperCase() + doc.category.slice(1)} · {formatBytes(doc.fileSize)} · {formatDate(doc.uploadedAt)}
+                  </Text>
+                </View>
+                <Icon name="chevron-forward" size={16} color={colors.textTertiary} />
               </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.actionCard}
-                onPress={() => navigation.navigate('Members')}
-              >
-                <Text style={styles.actionIcon}>👥</Text>
-                <Text style={styles.actionLabel}>Members</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.actionCard}
-                onPress={() => navigation.navigate('FamilySettings')}
-              >
-                <Text style={styles.actionIcon}>⚙️</Text>
-                <Text style={styles.actionLabel}>Settings</Text>
-              </TouchableOpacity>
-            </View>
-          </>
+            ))}
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -103,43 +135,66 @@ export default function HomeScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
-    borderBottomWidth: 1, borderBottomColor: colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
   },
-  logo: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text },
-  greeting: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 2 },
-  profileBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: colors.primaryLight, justifyContent: 'center', alignItems: 'center',
-  },
-  profileInitial: { fontSize: fontSize.md, fontWeight: '700', color: colors.primary },
-  content: { padding: spacing.xl, gap: spacing.md },
-  sectionTitle: {
-    fontSize: fontSize.sm, fontWeight: '700', color: colors.textSecondary,
-    textTransform: 'uppercase', letterSpacing: 0.5,
-  },
-  primaryCard: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg,
-    borderWidth: 1, borderColor: colors.border,
-  },
-  primaryCardIcon: { fontSize: 32 },
-  primaryCardText: { flex: 1 },
-  primaryCardTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text },
-  primaryCardSub: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 2 },
-  chevron: { fontSize: 22, color: colors.textSecondary },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: TAB_SCROLL_PADDING },
   uploadCard: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
-    backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.primary,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    ...shadows.md,
   },
-  uploadCardIcon: { fontSize: 20 },
-  uploadCardText: { color: colors.white, fontSize: fontSize.md, fontWeight: '600' },
-  adminGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  actionCard: {
-    width: '47%', backgroundColor: colors.primaryLight, borderRadius: radius.lg,
-    padding: spacing.lg, alignItems: 'center', gap: spacing.sm,
+  uploadIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  actionIcon: { fontSize: 28 },
-  actionLabel: { fontSize: fontSize.sm, fontWeight: '600', color: colors.primary, textAlign: 'center' },
+  uploadText: { flex: 1 },
+  emptyDocs: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  emptyText: { color: colors.textSecondary },
+  docList: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    overflow: 'hidden',
+    ...shadows.sm,
+  },
+  docRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  docIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.sm,
+    backgroundColor: colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  docInfo: { flex: 1, gap: 2 },
 });

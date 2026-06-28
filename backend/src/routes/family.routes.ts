@@ -21,7 +21,7 @@ const pinRateLimit = rateLimit({
 // POST /api/family/create  (admin creates the family vault)
 router.post('/create', verifyToken, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { familyName, pin } = req.body as { familyName?: string; pin?: string };
+    const { familyName, pin, adminName } = req.body as { familyName?: string; pin?: string; adminName?: string };
 
     if (!familyName || familyName.trim().length < 2) {
       res.status(400).json({ success: false, error: 'familyName must be at least 2 characters' });
@@ -61,7 +61,7 @@ router.post('/create', verifyToken, async (req: AuthRequest, res: Response, next
     };
 
     const memberData: MemberDoc = {
-      name: phone,
+      name: (adminName?.trim() && adminName.trim().length >= 2) ? adminName.trim() : phone,
       phone,
       role: 'admin',
       canUpload: true,

@@ -1,14 +1,11 @@
 import React, { useState } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity,
-  StyleSheet, ActivityIndicator, Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, StyleSheet, Alert } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../types/navigation';
 import { sendOtp } from '../../api/auth.api';
 import { checkInvite } from '../../api/family.api';
-import { colors, spacing, fontSize } from '../../theme';
+import { Screen, AppHeader, Text, Button, Input } from '../../components/ui';
+import { spacing } from '../../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<OnboardingStackParamList, 'PhoneEntry'>;
@@ -54,83 +51,46 @@ export default function PhoneEntryScreen({ navigation }: Props) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Enter your phone number</Text>
-        <Text style={styles.subtitle}>Members are verified via family PIN — no OTP cost</Text>
-
-        <View style={styles.inputRow}>
-          <View style={styles.prefix}>
-            <Text style={styles.prefixText}>🇮🇳 +91</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            placeholder="98765 43210"
-            placeholderTextColor={colors.textSecondary}
-            keyboardType="phone-pad"
-            maxLength={10}
-            value={phone}
-            onChangeText={setPhone}
-            autoFocus
+    <Screen
+      scroll={false}
+      keyboardAvoiding
+      header={<AppHeader onBack={() => navigation.goBack()} />}
+      footer={
+        <View style={styles.footer}>
+          <Button
+            title="Continue"
+            onPress={handleContinue}
+            loading={loading}
+            disabled={!isValid}
           />
         </View>
+      }
+    >
+      <View style={styles.content}>
+        <View style={styles.intro}>
+          <Text variant="h1">Enter your phone number</Text>
+          <Text variant="body" muted>
+            Members are verified via family PIN — no OTP cost
+          </Text>
+        </View>
 
-        <Text style={styles.hint}>Enter 10-digit mobile number</Text>
+        <Input
+          label="Mobile number (🇮🇳 +91)"
+          placeholder="98765 43210"
+          keyboardType="phone-pad"
+          maxLength={10}
+          value={phone}
+          onChangeText={setPhone}
+          autoFocus
+          hint="Enter 10-digit mobile number"
+        />
       </View>
-
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.button, !isValid && styles.buttonDisabled]}
-          onPress={handleContinue}
-          disabled={!isValid || loading}
-        >
-          {loading ? (
-            <ActivityIndicator color={colors.white} />
-          ) : (
-            <Text style={styles.buttonText}>Continue</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { flex: 1, paddingHorizontal: spacing.xl, paddingTop: spacing.xxl },
-  title: { fontSize: fontSize.xxl, fontWeight: '700', color: colors.text, marginBottom: spacing.sm },
-  subtitle: { fontSize: fontSize.md, color: colors.textSecondary, marginBottom: spacing.xl },
-  inputRow: {
-    flexDirection: 'row',
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  prefix: {
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    justifyContent: 'center',
-    borderRightWidth: 1,
-    borderRightColor: colors.border,
-  },
-  prefixText: { fontSize: fontSize.md, color: colors.text, fontWeight: '500' },
-  input: {
-    flex: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    fontSize: fontSize.lg,
-    color: colors.text,
-    letterSpacing: 1,
-  },
-  hint: { marginTop: spacing.sm, fontSize: fontSize.sm, color: colors.textSecondary },
-  footer: { padding: spacing.xl },
-  button: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: colors.white, fontSize: fontSize.lg, fontWeight: '600' },
+  content: { flex: 1, paddingTop: spacing.xl, gap: spacing.xl },
+  intro: { gap: spacing.sm },
+  footer: { padding: spacing.lg },
 });

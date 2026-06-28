@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, Alert } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../../types/navigation';
 import { renameFamily, changeFamilyPin } from '../../api/family.api';
 import { useAuth } from '../../contexts/AuthContext';
-import { colors, spacing, fontSize, radius } from '../../theme';
+import { Screen, AppHeader, Text, Card, Input, Button } from '../../components/ui';
+import { spacing } from '../../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<AppStackParamList, 'FamilySettings'>;
@@ -76,116 +74,70 @@ export default function FamilySettingsScreen({ navigation }: Props) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Family Settings</Text>
-        <View style={styles.backBtn} />
-      </View>
+    <Screen
+      keyboardAvoiding
+      header={<AppHeader title="Family Settings" onBack={() => navigation.goBack()} />}
+      contentContainerStyle={styles.content}
+    >
+      <Card style={styles.section}>
+        <Text variant="h2">Rename family</Text>
+        <Input
+          label="New family name"
+          placeholder="New family name"
+          value={newName}
+          onChangeText={setNewName}
+          maxLength={40}
+          autoCapitalize="words"
+        />
+        <Button
+          title="Rename"
+          onPress={handleRename}
+          loading={renamingLoading}
+          disabled={renamingLoading}
+        />
+      </Card>
 
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {/* Rename */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Rename Family</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="New family name"
-            placeholderTextColor={colors.textSecondary}
-            value={newName}
-            onChangeText={setNewName}
-            maxLength={40}
-            autoCapitalize="words"
-          />
-          <TouchableOpacity
-            style={[styles.btn, renamingLoading && styles.btnDisabled]}
-            onPress={handleRename}
-            disabled={renamingLoading}
-          >
-            {renamingLoading
-              ? <ActivityIndicator color={colors.white} size="small" />
-              : <Text style={styles.btnText}>Rename</Text>
-            }
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.dividerFull} />
-
-        {/* Change PIN */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Change PIN</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Current PIN"
-            placeholderTextColor={colors.textSecondary}
-            value={currentPin}
-            onChangeText={setCurrentPin}
-            keyboardType="number-pad"
-            secureTextEntry
-            maxLength={6}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="New PIN (4–6 digits)"
-            placeholderTextColor={colors.textSecondary}
-            value={newPin}
-            onChangeText={setNewPin}
-            keyboardType="number-pad"
-            secureTextEntry
-            maxLength={6}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Confirm new PIN"
-            placeholderTextColor={colors.textSecondary}
-            value={confirmPin}
-            onChangeText={setConfirmPin}
-            keyboardType="number-pad"
-            secureTextEntry
-            maxLength={6}
-          />
-          <TouchableOpacity
-            style={[styles.btn, pinLoading && styles.btnDisabled]}
-            onPress={handleChangePin}
-            disabled={pinLoading}
-          >
-            {pinLoading
-              ? <ActivityIndicator color={colors.white} size="small" />
-              : <Text style={styles.btnText}>Change PIN</Text>
-            }
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+      <Card style={styles.section}>
+        <Text variant="h2">Change PIN</Text>
+        <Input
+          label="Current PIN"
+          placeholder="Current PIN"
+          value={currentPin}
+          onChangeText={setCurrentPin}
+          keyboardType="number-pad"
+          secureTextEntry
+          maxLength={6}
+        />
+        <Input
+          label="New PIN"
+          placeholder="New PIN (4–6 digits)"
+          value={newPin}
+          onChangeText={setNewPin}
+          keyboardType="number-pad"
+          secureTextEntry
+          maxLength={6}
+        />
+        <Input
+          label="Confirm new PIN"
+          placeholder="Confirm new PIN"
+          value={confirmPin}
+          onChangeText={setConfirmPin}
+          keyboardType="number-pad"
+          secureTextEntry
+          maxLength={6}
+        />
+        <Button
+          title="Change PIN"
+          onPress={handleChangePin}
+          loading={pinLoading}
+          disabled={pinLoading}
+        />
+      </Card>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
-    borderBottomWidth: 1, borderBottomColor: colors.border,
-  },
-  backBtn: { width: 60 },
-  backText: { color: colors.primary, fontSize: fontSize.md, fontWeight: '500' },
-  headerTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text },
-  content: { padding: spacing.xl, gap: spacing.lg },
+  content: { gap: spacing.lg },
   section: { gap: spacing.md },
-  sectionTitle: {
-    fontSize: fontSize.md, fontWeight: '700', color: colors.text,
-  },
-  input: {
-    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
-    borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.md,
-    fontSize: fontSize.md, color: colors.text,
-  },
-  btn: {
-    backgroundColor: colors.primary, borderRadius: radius.md,
-    paddingVertical: spacing.md, alignItems: 'center',
-  },
-  btnDisabled: { opacity: 0.6 },
-  btnText: { color: colors.white, fontWeight: '700', fontSize: fontSize.md },
-  dividerFull: { height: 1, backgroundColor: colors.border },
 });
