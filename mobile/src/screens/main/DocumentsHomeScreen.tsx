@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import {
   View, Text, TouchableOpacity,
   StyleSheet, FlatList,
@@ -13,13 +13,13 @@ type Props = {
 };
 
 const CATEGORIES = [
-  { key: 'identity',  label: 'Identity',   icon: 'ðŸªª', sub: 'Aadhaar, PAN, Passport' },
-  { key: 'property',  label: 'Property',   icon: 'ðŸ˜ï¸', sub: 'Land records, Deeds' },
-  { key: 'financial', label: 'Financial',  icon: 'ðŸ’°', sub: 'Insurance, Passbooks' },
-  { key: 'medical',   label: 'Medical',    icon: 'ðŸ¥', sub: 'Reports, Prescriptions' },
-  { key: 'education', label: 'Education',  icon: 'ðŸŽ“', sub: 'Degrees, Marksheets' },
-  { key: 'vehicle',   label: 'Vehicles',   icon: 'ðŸš—', sub: 'RC book, Driving license' },
-  { key: 'other',     label: 'Other',      icon: 'ðŸ“„', sub: 'Ration card, Misc' },
+  { key: 'identity',  label: 'Identity',   icon: '🪪', sub: 'Aadhaar, PAN, Passport' },
+  { key: 'property',  label: 'Property',   icon: '🏘️', sub: 'Land records, Deeds' },
+  { key: 'financial', label: 'Financial',  icon: '💰', sub: 'Insurance, Passbooks' },
+  { key: 'medical',   label: 'Medical',    icon: '🏥', sub: 'Reports, Prescriptions' },
+  { key: 'education', label: 'Education',  icon: '🎓', sub: 'Degrees, Marksheets' },
+  { key: 'vehicle',   label: 'Vehicles',   icon: '🚗', sub: 'RC book, Driving license' },
+  { key: 'other',     label: 'Other',      icon: '📄', sub: 'Ration card, Misc' },
 ] as const;
 
 export default function DocumentsHomeScreen({ navigation }: Props) {
@@ -27,7 +27,7 @@ export default function DocumentsHomeScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>â† Back</Text>
+          <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Family Vault</Text>
         <TouchableOpacity onPress={() => navigation.navigate('DocumentUpload')}>

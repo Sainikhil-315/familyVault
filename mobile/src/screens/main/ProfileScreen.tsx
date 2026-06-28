@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert,
 } from 'react-native';
@@ -26,7 +26,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 export default function ProfileScreen({ navigation }: Props) {
   const { user, role, canUpload, memberName } = useAuth();
 
-  const phone = user?.phoneNumber ?? 'â€”';
+  const phone = user?.phoneNumber ?? '—';
   const displayName = memberName ?? phone;
   const roleLabel = role === 'admin' ? 'Admin' : 'Member';
   const uploadLabel = role === 'admin' ? 'Yes (admin)' : canUpload ? 'Yes' : 'No';
@@ -50,7 +50,7 @@ export default function ProfileScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backText}>â† Back</Text>
+          <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Profile</Text>
         <View style={styles.backBtn} />

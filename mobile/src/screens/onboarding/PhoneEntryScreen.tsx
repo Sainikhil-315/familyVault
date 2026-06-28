@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, ActivityIndicator, Alert,
@@ -57,11 +57,11 @@ export default function PhoneEntryScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Enter your phone number</Text>
-        <Text style={styles.subtitle}>Members are verified via family PIN â€” no OTP cost</Text>
+        <Text style={styles.subtitle}>Members are verified via family PIN — no OTP cost</Text>
 
         <View style={styles.inputRow}>
           <View style={styles.prefix}>
-            <Text style={styles.prefixText}>ðŸ‡®ðŸ‡³ +91</Text>
+            <Text style={styles.prefixText}>🇮🇳 +91</Text>
           </View>
           <TextInput
             style={styles.input}

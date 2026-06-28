@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, ActivityIndicator,
@@ -28,7 +28,7 @@ export default function FamilyCreateScreen() {
     try {
       const familyId = await createFamily(familyName.trim(), pin);
       setFamilyId(familyId);
-      // AuthContext detects familyId â†’ AppStack renders automatically
+      // AuthContext detects familyId → AppStack renders automatically
     } catch (err) {
       Alert.alert('Error', err instanceof Error ? err.message : 'Could not create family vault');
     } finally {
@@ -59,11 +59,11 @@ export default function FamilyCreateScreen() {
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Family PIN (4â€“6 digits)</Text>
+            <Text style={styles.label}>Family PIN (4–6 digits)</Text>
             <View style={styles.pinRow}>
               <TextInput
                 style={[styles.input, { flex: 1 }]}
-                placeholder="â€¢â€¢â€¢â€¢"
+                placeholder="••••"
                 placeholderTextColor={colors.textSecondary}
                 secureTextEntry={!showPin}
                 keyboardType="number-pad"
@@ -72,7 +72,7 @@ export default function FamilyCreateScreen() {
                 onChangeText={(v) => setPin(v.replace(/\D/g, ''))}
               />
               <TouchableOpacity style={styles.eyeBtn} onPress={() => setShowPin((s) => !s)}>
-                <Text style={styles.eyeText}>{showPin ? 'ðŸ™ˆ' : 'ðŸ‘ï¸'}</Text>
+                <Text style={styles.eyeText}>{showPin ? '🙈' : '👁️'}</Text>
               </TouchableOpacity>
             </View>
             <Text style={styles.hint}>Share this PIN privately with family members</Text>
@@ -82,7 +82,7 @@ export default function FamilyCreateScreen() {
             <Text style={styles.label}>Confirm PIN</Text>
             <TextInput
               style={[styles.input, confirmPin.length > 0 && pin !== confirmPin && styles.inputError]}
-              placeholder="â€¢â€¢â€¢â€¢"
+              placeholder="••••"
               placeholderTextColor={colors.textSecondary}
               secureTextEntry={!showPin}
               keyboardType="number-pad"
@@ -96,9 +96,9 @@ export default function FamilyCreateScreen() {
           </View>
 
           <View style={styles.securityNote}>
-            <Text style={styles.securityTitle}>ðŸ”’ How your PIN is protected</Text>
+            <Text style={styles.securityTitle}>🔒 How your PIN is protected</Text>
             <Text style={styles.securityBody}>
-              Your PIN is hashed on our server before storage â€” it is never saved in plain text. Even we cannot read it.
+              Your PIN is hashed on our server before storage — it is never saved in plain text. Even we cannot read it.
             </Text>
           </View>
         </ScrollView>

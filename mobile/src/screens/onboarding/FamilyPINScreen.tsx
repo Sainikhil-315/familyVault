@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, ActivityIndicator, Alert,
@@ -86,7 +86,7 @@ export default function FamilyPINScreen({ navigation, route }: Props) {
             <Text style={styles.label}>Family PIN</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter 4â€“6 digit PIN"
+              placeholder="Enter 4–6 digit PIN"
               placeholderTextColor={colors.textSecondary}
               secureTextEntry
               keyboardType="number-pad"
