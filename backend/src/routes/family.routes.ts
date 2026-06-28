@@ -256,6 +256,41 @@ router.post('/approve-join', verifyToken, async (req: AuthRequest, res: Response
   }
 });
 
+// GET /api/family/invited?familyId=  — pending invites (admin only)
+router.get('/invited', verifyToken, async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { familyId } = req.query as { familyId?: string };
+    const uid = req.uid!;
+
+    if (!familyId) {
+      res.status(400).json({ success: false, error: 'familyId is required' });
+      return;
+    }
+
+    const familySnap = await db.collection('families').doc(familyId).get();
+    if (!familySnap.exists || (familySnap.data() as FamilyDoc).adminId !== uid) {
+      res.status(403).json({ success: false, error: 'Only the admin can view invitations' });
+      return;
+    }
+
+    const snap = await familySnap.ref
+      .collection('invitedNumbers')
+      .where('status', '==', 'pending')
+      .get();
+
+    const invites = snap.docs
+      .map((d) => ({
+        phone: d.data().phone as string,
+        addedAt: (d.data().addedAt as admin.firestore.Timestamp).toMillis(),
+      }))
+      .sort((a, b) => b.addedAt - a.addedAt);
+
+    res.json({ success: true, data: invites });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/family/members?familyId=  — active members (any active member can view)
 router.get('/members', verifyToken, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {

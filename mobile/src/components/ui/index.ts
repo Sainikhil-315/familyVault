@@ -15,3 +15,4 @@ export { SectionLabel } from './SectionLabel';
 export { Divider } from './Divider';
 export { IconChip } from './IconChip';
 export { LoadingView, ErrorView } from './StateView';
+export { SearchBar } from './SearchBar';

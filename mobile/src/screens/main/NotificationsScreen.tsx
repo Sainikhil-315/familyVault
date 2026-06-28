@@ -3,6 +3,7 @@ import { View, StyleSheet, FlatList, Alert } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../../types/navigation';
 import { getNotifications, approveJoin, Notification } from '../../api/family.api';
+import { usePendingCount } from '../../contexts/NotificationContext';
 import {
   Screen,
   AppHeader,
@@ -23,6 +24,7 @@ export default function NotificationsScreen({ navigation }: Props) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const { refreshCount } = usePendingCount();
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -44,6 +46,7 @@ export default function NotificationsScreen({ navigation }: Props) {
     try {
       await approveJoin(notificationId, action);
       setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+      refreshCount();
       Alert.alert(
         action === 'approve' ? 'Member Approved' : 'Request Rejected',
         action === 'approve'

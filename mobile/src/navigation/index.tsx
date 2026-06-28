@@ -8,11 +8,10 @@ import { BlurView } from 'expo-blur';
 import { useAuth } from '../contexts/AuthContext';
 import { OnboardingStackParamList, RootStackParamList, TabParamList } from '../types/navigation';
 import { colors } from '../theme';
+import { FLOATING_TAB_HEIGHT, FLOATING_TAB_BOTTOM } from './constants';
+import { usePendingCount } from '../contexts/NotificationContext';
 
-// Floating tab bar height + bottom margin — screens use this for scroll padding
-export const FLOATING_TAB_HEIGHT = 68;
-export const FLOATING_TAB_BOTTOM = 20;
-export const TAB_SCROLL_PADDING = FLOATING_TAB_HEIGHT + FLOATING_TAB_BOTTOM + 12;
+export { FLOATING_TAB_HEIGHT, FLOATING_TAB_BOTTOM, TAB_SCROLL_PADDING } from './constants';
 
 import WelcomeScreen from '../screens/onboarding/WelcomeScreen';
 import PhoneEntryScreen from '../screens/onboarding/PhoneEntryScreen';
@@ -32,6 +31,7 @@ import DocumentUploadScreen from '../screens/main/DocumentUploadScreen';
 import DocumentViewScreen from '../screens/main/DocumentViewScreen';
 import MemberManagementScreen from '../screens/main/MemberManagementScreen';
 import FamilySettingsScreen from '../screens/main/FamilySettingsScreen';
+import SearchScreen from '../screens/main/SearchScreen';
 
 const OnboardingStack = createNativeStackNavigator<OnboardingStackParamList>();
 const RootStack = createNativeStackNavigator<RootStackParamList>();
@@ -56,6 +56,8 @@ function FloatingTabBackground() {
 }
 
 function TabNavigator() {
+  const { pendingCount } = usePendingCount();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -69,6 +71,8 @@ function TabNavigator() {
           const [active, inactive] = TAB_ICONS[route.name] ?? ['help-circle', 'help-circle-outline'];
           return <Ionicons name={focused ? active : inactive} size={size} color={color} />;
         },
+        tabBarBadge: route.name === 'Profile' && pendingCount > 0 ? pendingCount : undefined,
+        tabBarBadgeStyle: { backgroundColor: '#EF4444', fontSize: 10, minWidth: 16, height: 16, lineHeight: 16 },
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
@@ -103,6 +107,7 @@ function AppNavigator() {
       <RootStack.Screen name="Notifications" component={NotificationsScreen} />
       <RootStack.Screen name="Members" component={MemberManagementScreen} />
       <RootStack.Screen name="FamilySettings" component={FamilySettingsScreen} />
+      <RootStack.Screen name="Search" component={SearchScreen} />
     </RootStack.Navigator>
   );
 }

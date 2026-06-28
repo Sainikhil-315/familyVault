@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, FlatList, StyleSheet, ActivityIndicator, Alert, Switch } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../../types/navigation';
-import { getMembers, toggleMemberUpload, MemberInfo } from '../../api/family.api';
+import { getMembers, toggleMemberUpload, getInvitedMembers, MemberInfo, InvitedMember } from '../../api/family.api';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   Screen,
@@ -15,16 +15,20 @@ import {
   EmptyState,
   LoadingView,
   ErrorView,
+  SectionLabel,
+  Icon,
 } from '../../components/ui';
-import { colors, spacing } from '../../theme';
+import { colors, spacing, radius } from '../../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<AppStackParamList, 'Members'>;
 };
 
 export default function MemberManagementScreen({ navigation }: Props) {
-  const { familyId, user } = useAuth();
+  const { familyId, user, role } = useAuth();
+  const isAdmin = role === 'admin';
   const [members, setMembers] = useState<MemberInfo[]>([]);
+  const [invited, setInvited] = useState<InvitedMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -34,14 +38,18 @@ export default function MemberManagementScreen({ navigation }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const data = await getMembers(familyId);
-      setMembers(data);
+      const [membersData, invitedData] = await Promise.all([
+        getMembers(familyId),
+        isAdmin ? getInvitedMembers(familyId) : Promise.resolve([]),
+      ]);
+      setMembers(membersData);
+      setInvited(invitedData);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load members');
     } finally {
       setLoading(false);
     }
-  }, [familyId]);
+  }, [familyId, isAdmin]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -63,7 +71,7 @@ export default function MemberManagementScreen({ navigation }: Props) {
 
   function renderMember({ item }: { item: MemberInfo }) {
     const isMe = item.id === user?.uid;
-    const isAdmin = item.role === 'admin';
+    const memberIsAdmin = item.role === 'admin';
     const toggling = togglingId === item.id;
 
     return (
@@ -73,7 +81,7 @@ export default function MemberManagementScreen({ navigation }: Props) {
           subtitle={item.phone}
           leading={<Avatar name={item.name} size={44} />}
           trailing={
-            isAdmin ? (
+            memberIsAdmin ? (
               <Badge label="Admin" tone="primary" />
             ) : (
               <View style={styles.uploadToggle}>
@@ -90,6 +98,24 @@ export default function MemberManagementScreen({ navigation }: Props) {
                 )}
               </View>
             )
+          }
+        />
+      </Card>
+    );
+  }
+
+  function renderInvited({ item }: { item: InvitedMember }) {
+    return (
+      <Card padded={false} style={styles.memberCard}>
+        <ListRow
+          title={item.phone}
+          subtitle={`Invited ${new Date(item.addedAt).toLocaleDateString('en-IN')}`}
+          leading={<Avatar name={item.phone} size={44} />}
+          trailing={
+            <View style={styles.awaitingBadge}>
+              <Icon name="time-outline" size={12} color={colors.warning} />
+              <Text style={styles.awaitingText}>Awaiting</Text>
+            </View>
           }
         />
       </Card>
@@ -119,12 +145,27 @@ export default function MemberManagementScreen({ navigation }: Props) {
             </Text>
           }
           ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ListFooterComponent={
+            invited.length > 0 ? (
+              <View style={styles.invitedSection}>
+                <SectionLabel>Pending Invitations</SectionLabel>
+                {invited.map((item) => (
+                  <View key={item.phone}>
+                    {renderInvited({ item })}
+                    <View style={styles.separator} />
+                  </View>
+                ))}
+              </View>
+            ) : null
+          }
           ListEmptyComponent={
-            <EmptyState
-              icon="people-outline"
-              title="No members yet"
-              message="Invite family members to share your vault."
-            />
+            invited.length === 0 ? (
+              <EmptyState
+                icon="people-outline"
+                title="No members yet"
+                message="Invite family members to share your vault."
+              />
+            ) : null
           }
         />
       )}
@@ -138,4 +179,15 @@ const styles = StyleSheet.create({
   memberCard: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   uploadToggle: { alignItems: 'center', gap: spacing.xs },
   separator: { height: spacing.sm },
+  invitedSection: { marginTop: spacing.lg },
+  awaitingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.warningLight ?? '#FFF7ED',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.sm,
+  },
+  awaitingText: { fontSize: 12, color: colors.warning ?? '#F59E0B', fontWeight: '500' },
 });

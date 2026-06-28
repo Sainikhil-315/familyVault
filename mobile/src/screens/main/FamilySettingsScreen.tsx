@@ -12,7 +12,7 @@ type Props = {
 };
 
 export default function FamilySettingsScreen({ navigation }: Props) {
-  const { familyId } = useAuth();
+  const { familyId, refreshAuth } = useAuth();
 
   const [newName, setNewName] = useState('');
   const [renamingLoading, setRenamingLoading] = useState(false);
@@ -32,6 +32,7 @@ export default function FamilySettingsScreen({ navigation }: Props) {
     setRenamingLoading(true);
     try {
       await renameFamily(familyId, trimmed);
+      await refreshAuth();
       setNewName('');
       Alert.alert('Done', `Family renamed to "${trimmed}".`);
     } catch (e) {

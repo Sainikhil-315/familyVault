@@ -1,15 +1,22 @@
 import { api } from './client';
 
+export interface DocumentPage {
+  r2Key: string;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+  pageIndex: number;
+}
+
 export interface DocumentMeta {
   id: string;
   familyId: string;
   uploadedBy: string;
   belongsTo: string;
   category: string;
-  fileName: string;
-  r2Key: string;
-  fileSize: number;
-  mimeType: string;
+  name: string;
+  pages: DocumentPage[];
+  totalSize: number;
   uploadedAt: number;
 }
 
@@ -29,10 +36,8 @@ export async function saveDocumentMeta(payload: {
   familyId: string;
   belongsTo: string;
   category: string;
-  fileName: string;
-  r2Key: string;
-  fileSize: number;
-  mimeType: string;
+  name: string;
+  pages: DocumentPage[];
 }): Promise<string> {
   const res = await api.post<{ success: boolean; data: { docId: string } }>(
     '/api/documents/save',
@@ -58,4 +63,8 @@ export async function getDownloadUrl(r2Key: string, familyId: string): Promise<s
     { params: { r2Key, familyId } }
   );
   return res.data.data.url;
+}
+
+export async function deleteDocument(docId: string, familyId: string): Promise<void> {
+  await api.delete(`/api/documents/${docId}`, { params: { familyId } });
 }

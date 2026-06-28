@@ -14,11 +14,14 @@ function base64ToBytes(base64: string): Uint8Array {
 
 export function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  // Process in 8 KB chunks — avoids Hermes call-stack and string-size limits
+  // that break single-call btoa() on multi-MB camera images.
+  const CHUNK = 8192;
+  const parts: string[] = [];
+  for (let i = 0; i < bytes.byteLength; i += CHUNK) {
+    parts.push(String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + CHUNK))));
   }
-  return btoa(binary);
+  return btoa(parts.join(''));
 }
 
 async function getFamilyKeyBytes(familyId: string): Promise<Uint8Array> {

@@ -3,8 +3,8 @@ import crypto from 'crypto';
 import admin from 'firebase-admin';
 import { db } from '../config/firebase';
 import { verifyToken, AuthRequest } from '../middleware/verifyToken';
-import { getPresignedUploadUrl, getPresignedDownloadUrl } from '../services/r2.service';
-import { DocumentDoc, DocumentCategory, MemberDoc } from '../types';
+import { getPresignedUploadUrl, getPresignedDownloadUrl, deleteObject } from '../services/r2.service';
+import { DocumentDoc, DocumentCategory, DocumentPage, MemberDoc } from '../types';
 import { env } from '../config/env';
 
 const router = Router();
@@ -25,7 +25,6 @@ async function assertActiveMember(uid: string, familyId: string): Promise<Member
 }
 
 // POST /api/documents/presigned-upload
-// Returns a presigned PUT URL for uploading directly to R2
 router.post('/presigned-upload', verifyToken, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { familyId, fileName, fileSize } = req.body as {
@@ -64,22 +63,20 @@ router.post('/presigned-upload', verifyToken, async (req: AuthRequest, res: Resp
   }
 });
 
-// POST /api/documents/save — save metadata after successful R2 upload
+// POST /api/documents/save — save metadata after successful R2 upload (multi-page)
 router.post('/save', verifyToken, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { familyId, belongsTo, category, fileName, r2Key, fileSize, mimeType } = req.body as {
+    const { familyId, belongsTo, category, name, pages } = req.body as {
       familyId?: string;
       belongsTo?: string;
       category?: string;
-      fileName?: string;
-      r2Key?: string;
-      fileSize?: number;
-      mimeType?: string;
+      name?: string;
+      pages?: DocumentPage[];
     };
     const uid = req.uid!;
 
-    if (!familyId || !belongsTo || !category || !fileName || !r2Key || !fileSize || !mimeType) {
-      res.status(400).json({ success: false, error: 'All fields are required' });
+    if (!familyId || !belongsTo || !category || !name || !Array.isArray(pages) || pages.length === 0) {
+      res.status(400).json({ success: false, error: 'familyId, belongsTo, category, name, and pages[] are required' });
       return;
     }
 
@@ -88,23 +85,26 @@ router.post('/save', verifyToken, async (req: AuthRequest, res: Response, next: 
       return;
     }
 
-    // Verify r2Key belongs to this family (prevents saving arbitrary keys)
-    if (!r2Key.startsWith(`families/${familyId}/`)) {
-      res.status(400).json({ success: false, error: 'Invalid r2Key for this family' });
-      return;
+    // Verify all r2Keys belong to this family
+    for (const page of pages) {
+      if (!page.r2Key || !page.r2Key.startsWith(`families/${familyId}/`)) {
+        res.status(400).json({ success: false, error: 'Invalid r2Key for this family' });
+        return;
+      }
     }
 
     await assertActiveMember(uid, familyId);
+
+    const totalSize = pages.reduce((sum, p) => sum + (p.fileSize ?? 0), 0);
 
     const docData: DocumentDoc = {
       familyId,
       uploadedBy: uid,
       belongsTo,
       category: category as DocumentCategory,
-      fileName,
-      r2Key,
-      fileSize,
-      mimeType,
+      name: name.trim(),
+      pages,
+      totalSize,
       uploadedAt: admin.firestore.Timestamp.now(),
     };
 
@@ -186,6 +186,54 @@ router.get('/download-url', verifyToken, async (req: AuthRequest, res: Response,
 
     const url = await getPresignedDownloadUrl(r2Key);
     res.json({ success: true, data: { url, expiresIn: 900 } });
+  } catch (err: unknown) {
+    if (err instanceof Error && 'status' in err) {
+      res.status((err as Error & { status: number }).status).json({ success: false, error: err.message });
+      return;
+    }
+    next(err);
+  }
+});
+
+// DELETE /api/documents/:docId — admin only
+router.delete('/:docId', verifyToken, async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { docId } = req.params;
+    const { familyId } = req.query as { familyId?: string };
+    const uid = req.uid!;
+
+    if (!familyId) {
+      res.status(400).json({ success: false, error: 'familyId is required' });
+      return;
+    }
+
+    const member = await assertActiveMember(uid, familyId);
+    if (member.role !== 'admin') {
+      res.status(403).json({ success: false, error: 'Only admins can delete documents' });
+      return;
+    }
+
+    const docSnap = await db.collection('documents').doc(docId).get();
+    if (!docSnap.exists || docSnap.data()?.familyId !== familyId) {
+      res.status(404).json({ success: false, error: 'Document not found' });
+      return;
+    }
+
+    const data = docSnap.data()!;
+
+    // Get all r2Keys — new format (pages[]) and legacy (r2Key)
+    const r2Keys: string[] = [];
+    if (Array.isArray(data.pages)) {
+      r2Keys.push(...data.pages.map((p: DocumentPage) => p.r2Key));
+    } else if (data.r2Key) {
+      r2Keys.push(data.r2Key as string);
+    }
+
+    // Delete all R2 objects in parallel, then Firestore doc
+    await Promise.all(r2Keys.map((key) => deleteObject(key)));
+    await db.collection('documents').doc(docId).delete();
+
+    res.status(204).send();
   } catch (err: unknown) {
     if (err instanceof Error && 'status' in err) {
       res.status((err as Error & { status: number }).status).json({ success: false, error: err.message });

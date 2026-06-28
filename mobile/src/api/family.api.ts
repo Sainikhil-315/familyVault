@@ -75,6 +75,19 @@ export interface MemberInfo {
   joinedAt: number;
 }
 
+export interface InvitedMember {
+  phone: string;
+  addedAt: number;
+}
+
+export async function getInvitedMembers(familyId: string): Promise<InvitedMember[]> {
+  const res = await api.get<{ success: boolean; data: InvitedMember[] }>(
+    '/api/family/invited',
+    { params: { familyId } }
+  );
+  return res.data.data;
+}
+
 export async function getMembers(familyId: string): Promise<MemberInfo[]> {
   const res = await api.get<{ success: boolean; data: MemberInfo[] }>(
     '/api/family/members',

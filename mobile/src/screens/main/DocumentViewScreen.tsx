@@ -1,23 +1,27 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
-  View, Image, TouchableOpacity, StyleSheet, Alert, Platform, ScrollView,
+  View, Image, TouchableOpacity, StyleSheet, Alert, Platform,
+  ScrollView, FlatList, Dimensions, Modal, ActivityIndicator,
+  PanResponder, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import {
   cacheDirectory,
   writeAsStringAsync,
+  readAsStringAsync,
   getInfoAsync,
   EncodingType,
 } from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import * as Print from 'expo-print';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { AppStackParamList } from '../../types/navigation';
-import { getDownloadUrl } from '../../api/documents.api';
+import { getDownloadUrl, deleteDocument, DocumentPage } from '../../api/documents.api';
 import { decryptFile, arrayBufferToBase64 } from '../../services/encryption';
 import { useAuth } from '../../contexts/AuthContext';
-import { Text, LoadingView, ErrorView, EmptyState } from '../../components/ui';
+import { Text, LoadingView, ErrorView, Icon } from '../../components/ui';
 import { colors, spacing, layout } from '../../theme';
 
 type Props = {
@@ -25,173 +29,366 @@ type Props = {
   route: RouteProp<AppStackParamList, 'DocumentView'>;
 };
 
-type ViewState =
-  | { status: 'loading'; message: string }
+type PageState =
+  | { status: 'idle' }
+  | { status: 'loading' }
   | { status: 'image'; uri: string }
-  | { status: 'pdf'; localUri: string }
+  | { status: 'pdf'; uri: string }
   | { status: 'error'; message: string };
 
-function isImage(mimeType: string): boolean {
-  return mimeType.startsWith('image/');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+function BottomSheet({
+  visible,
+  onClose,
+  children,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  const translateY = useRef(new Animated.Value(0)).current;
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => g.dy > 8 && Math.abs(g.dy) > Math.abs(g.dx),
+      onPanResponderMove: (_, g) => { if (g.dy > 0) translateY.setValue(g.dy); },
+      onPanResponderRelease: (_, g) => {
+        if (g.dy > 80 || g.vy > 0.5) { onClose(); translateY.setValue(0); }
+        else Animated.spring(translateY, { toValue: 0, useNativeDriver: true }).start();
+      },
+    })
+  ).current;
+
+  const handleClose = useCallback(() => { translateY.setValue(0); onClose(); }, [onClose, translateY]);
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
+      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={handleClose}>
+        <Animated.View
+          style={[styles.shareSheet, { transform: [{ translateY }] }]}
+          onStartShouldSetResponder={() => true}
+        >
+          <View style={styles.handleArea} {...panResponder.panHandlers}>
+            <View style={styles.handleBar} />
+          </View>
+          {children}
+        </Animated.View>
+      </TouchableOpacity>
+    </Modal>
+  );
 }
 
 function getCacheUri(r2Key: string, fileName: string): string {
-  // Use UUID portion of r2Key as cache filename to avoid collisions
   const uuid = r2Key.split('/').pop() ?? 'doc';
   const ext = fileName.includes('.') ? fileName.split('.').pop() : 'bin';
   return `${cacheDirectory}${uuid}.${ext}`;
 }
 
-async function fetchAndDecrypt(
+async function fetchAndDecryptPage(
   r2Key: string,
   familyId: string,
-  fileName: string,
-  mimeType: string
+  fileName: string
 ): Promise<string> {
-  const presignedUrl = await getDownloadUrl(r2Key, familyId);
+  const cacheUri = getCacheUri(r2Key, fileName);
+  const info = await getInfoAsync(cacheUri);
+  const isCacheValid =
+    info.exists &&
+    'modificationTime' in info &&
+    Date.now() - info.modificationTime * 1000 < 14 * 60 * 1000;
 
+  if (isCacheValid) return cacheUri;
+
+  const presignedUrl = await getDownloadUrl(r2Key, familyId);
   const response = await fetch(presignedUrl);
-  if (!response.ok) throw new Error(`Failed to fetch document (${response.status})`);
+  if (!response.ok) throw new Error(`Failed to fetch page (${response.status})`);
 
   const encryptedBuffer = await response.arrayBuffer();
   const decryptedBuffer = await decryptFile(encryptedBuffer, familyId);
-  const base64 = arrayBufferToBase64(decryptedBuffer);
-
-  // Write decrypted file to app-private cache directory
-  const cacheUri = getCacheUri(r2Key, fileName);
-  await writeAsStringAsync(cacheUri, base64, {
+  await writeAsStringAsync(cacheUri, arrayBufferToBase64(decryptedBuffer), {
     encoding: EncodingType.Base64,
   });
-
   return cacheUri;
+}
+
+// Backward compat: convert old single-file docs to pages[] format
+function getPages(doc: AppStackParamList['DocumentView']['doc']): DocumentPage[] {
+  if (doc.pages && doc.pages.length > 0) return doc.pages;
+  const legacy = doc as unknown as { r2Key?: string; fileName?: string; mimeType?: string; fileSize?: number };
+  if (legacy.r2Key) {
+    return [{
+      r2Key: legacy.r2Key,
+      fileName: legacy.fileName ?? 'document',
+      mimeType: legacy.mimeType ?? 'application/octet-stream',
+      fileSize: legacy.fileSize ?? 0,
+      pageIndex: 0,
+    }];
+  }
+  return [];
 }
 
 export default function DocumentViewScreen({ navigation, route }: Props) {
   const { doc } = route.params;
-  const { familyId } = useAuth();
-  const [viewState, setViewState] = useState<ViewState>({ status: 'loading', message: 'Fetching document...' });
+  const { familyId, role } = useAuth();
+  const isAdmin = role === 'admin';
+  const pages = getPages(doc);
 
-  const load = useCallback(async () => {
-    if (!familyId) {
-      setViewState({ status: 'error', message: 'Family context not found' });
-      return;
-    }
+  const [pageStates, setPageStates] = useState<PageState[]>(() => pages.map(() => ({ status: 'idle' })));
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [showShareSheet, setShowShareSheet] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
+  const flatListRef = useRef<FlatList>(null);
 
+  const loadPage = useCallback(async (index: number) => {
+    if (!familyId) return;
+    if (pageStates[index]?.status === 'image' || pageStates[index]?.status === 'pdf') return;
+
+    setPageStates((prev) => {
+      const next = [...prev];
+      next[index] = { status: 'loading' };
+      return next;
+    });
+
+    const page = pages[index];
     try {
-      setViewState({ status: 'loading', message: 'Fetching document...' });
-
-      // Check if already cached (valid for ~14 min to stay under presigned URL TTL)
-      const cacheUri = getCacheUri(doc.r2Key, doc.fileName);
-      const cacheInfo = await getInfoAsync(cacheUri);
-      const isCacheValid =
-        cacheInfo.exists &&
-        'modificationTime' in cacheInfo &&
-        Date.now() - cacheInfo.modificationTime * 1000 < 14 * 60 * 1000;
-
-      const localUri = isCacheValid
-        ? cacheUri
-        : await (async () => {
-            setViewState({ status: 'loading', message: 'Loading document...' });
-            return fetchAndDecrypt(doc.r2Key, familyId, doc.fileName, doc.mimeType);
-          })();
-
-      if (isImage(doc.mimeType)) {
-        setViewState({ status: 'image', uri: localUri });
-      } else {
-        setViewState({ status: 'pdf', localUri });
-      }
+      const localUri = await fetchAndDecryptPage(page.r2Key, familyId, page.fileName);
+      setPageStates((prev) => {
+        const next = [...prev];
+        next[index] = page.mimeType.startsWith('image/')
+          ? { status: 'image', uri: localUri }
+          : { status: 'pdf', uri: localUri };
+        return next;
+      });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to load document';
-      setViewState({ status: 'error', message: msg });
+      setPageStates((prev) => {
+        const next = [...prev];
+        next[index] = { status: 'error', message: err instanceof Error ? err.message : 'Failed to load page' };
+        return next;
+      });
     }
-  }, [familyId, doc]);
+  }, [familyId, pages, pageStates]);
 
-  useEffect(() => { load(); }, [load]);
+  // Load first page on mount
+  React.useEffect(() => { loadPage(0); }, []);
 
-  async function handleShare() {
-    if (viewState.status !== 'image' && viewState.status !== 'pdf') return;
-    const uri = viewState.status === 'image' ? viewState.uri : viewState.localUri;
-
-    const canShare = await Sharing.isAvailableAsync();
-    if (!canShare) {
-      Alert.alert('Sharing not available', 'Cannot share on this device.');
-      return;
-    }
-    await Sharing.shareAsync(uri, { mimeType: doc.mimeType });
+  function onViewableItemsChanged({ viewableItems }: { viewableItems: { index: number | null }[] }) {
+    const idx = viewableItems[0]?.index ?? 0;
+    setCurrentIndex(idx);
+    loadPage(idx);
+    // Pre-load next page
+    if (idx + 1 < pages.length) loadPage(idx + 1);
   }
 
-  const isReady = viewState.status === 'image' || viewState.status === 'pdf';
+  async function handleDelete() {
+    if (!familyId) return;
+    Alert.alert('Delete Document', `Delete "${doc.name}"? This cannot be undone.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteDocument(doc.id, familyId);
+            navigation.goBack();
+          } catch (err) {
+            Alert.alert('Error', err instanceof Error ? err.message : 'Could not delete document');
+          }
+        },
+      },
+    ]);
+  }
+
+  async function shareAsPDF() {
+    if (!familyId) return;
+    setShareLoading(true);
+    setShowShareSheet(false);
+    try {
+      // Load all pages
+      const uris: string[] = [];
+      for (let i = 0; i < pages.length; i++) {
+        const uri = await fetchAndDecryptPage(pages[i].r2Key, familyId, pages[i].fileName);
+        uris.push(uri);
+      }
+
+      // Build HTML with each page as a full-width image
+      const htmlPages = await Promise.all(
+        uris.map(async (uri, i) => {
+          const page = pages[i];
+          if (page.mimeType.startsWith('image/')) {
+            const b64 = await readAsStringAsync(uri, { encoding: EncodingType.Base64 });
+            const ext = page.mimeType.split('/')[1] ?? 'jpeg';
+            return `<img src="data:${page.mimeType};base64,${b64}" style="width:100%;display:block;page-break-after:always;"/>`;
+          }
+          // PDF pages: can't inline — skip with note
+          return `<p style="text-align:center;padding:40px;font-size:16px;">Page ${i + 1}: PDF (open in PDF app)</p>`;
+        })
+      );
+
+      const html = `<!DOCTYPE html><html><head><style>body{margin:0;padding:0}img{max-width:100%}</style></head><body>${htmlPages.join('')}</body></html>`;
+
+      // base64:true avoids Android FileProvider path issues — get PDF as string,
+      // write directly to cacheDirectory which expo-sharing can always access.
+      const { base64: pdfBase64 } = await Print.printToFileAsync({ html, base64: true });
+      const safeName = doc.name.replace(/[^a-zA-Z0-9_\-]/g, '_');
+      const shareUri = `${cacheDirectory}${safeName}.pdf`;
+      await writeAsStringAsync(shareUri, pdfBase64!, { encoding: EncodingType.Base64 });
+
+      const canShare = await Sharing.isAvailableAsync();
+      if (!canShare) {
+        Alert.alert('Sharing not available', 'Cannot share files on this device.');
+        return;
+      }
+      await Sharing.shareAsync(shareUri, {
+        mimeType: 'application/pdf',
+        dialogTitle: doc.name,
+        UTI: 'com.adobe.pdf',
+      });
+    } catch (err) {
+      Alert.alert('Share Failed', err instanceof Error ? err.message : 'Could not generate PDF');
+    } finally {
+      setShareLoading(false);
+    }
+  }
+
+  async function shareOriginal() {
+    setShowShareSheet(false);
+    const ps = pageStates[currentIndex];
+    if (ps.status !== 'image' && ps.status !== 'pdf') return;
+    const uri = ps.uri;
+    const canShare = await Sharing.isAvailableAsync();
+    if (!canShare) { Alert.alert('Sharing not available'); return; }
+    await Sharing.shareAsync(uri, { mimeType: pages[currentIndex].mimeType });
+  }
+
+  function renderPage({ item, index }: { item: DocumentPage; index: number }) {
+    const ps = pageStates[index] ?? { status: 'idle' };
+    return (
+      <View style={styles.pageSlide}>
+        {(ps.status === 'idle' || ps.status === 'loading') && (
+          <View style={styles.pageCenter}>
+            <ActivityIndicator color={colors.primary} size="large" />
+            <Text variant="caption" color={colors.textSecondary} style={{ marginTop: spacing.sm }}>
+              Loading page {index + 1}...
+            </Text>
+          </View>
+        )}
+        {ps.status === 'error' && (
+          <View style={styles.pageCenter}>
+            <Icon name="alert-circle-outline" size={40} color={colors.error} />
+            <Text variant="caption" color={colors.textSecondary} style={{ marginTop: spacing.sm }}>
+              {ps.message}
+            </Text>
+            <TouchableOpacity onPress={() => loadPage(index)} style={{ marginTop: spacing.md }}>
+              <Text variant="bodyMedium" color={colors.primary}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {ps.status === 'image' && (
+          <View style={styles.imageContainer}>
+            <Image
+              source={{ uri: ps.uri }}
+              style={styles.image}
+              resizeMode="contain"
+            />
+          </View>
+        )}
+        {ps.status === 'pdf' && Platform.OS === 'ios' && (
+          <WebView source={{ uri: ps.uri }} style={styles.webview} />
+        )}
+        {ps.status === 'pdf' && Platform.OS === 'android' && (
+          <View style={styles.pageCenter}>
+            <Icon name="document-text-outline" size={48} color={colors.primary} />
+            <Text variant="bodyMedium" style={{ marginTop: spacing.md }}>{item.fileName}</Text>
+            <Text variant="caption" color={colors.textSecondary} style={{ marginTop: spacing.xs }}>
+              Tap Share → Share as PDF to open
+            </Text>
+          </View>
+        )}
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} hitSlop={layout.hitSlop}>
-          <Text variant="bodyMedium" color={colors.primary}>‹ Back</Text>
+          <Icon name="chevron-back" size={22} color={colors.primary} />
         </TouchableOpacity>
-        <Text variant="bodyMedium" numberOfLines={1} center style={styles.headerTitle}>
-          {doc.fileName}
-        </Text>
-        <TouchableOpacity
-          onPress={handleShare}
-          style={[styles.headerBtn, styles.headerBtnRight]}
-          disabled={!isReady}
-          hitSlop={layout.hitSlop}
-        >
-          <Text variant="bodyMedium" color={isReady ? colors.primary : colors.textTertiary}>
-            Share
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.headerMid}>
+          <Text variant="bodyMedium" numberOfLines={1} center>{doc.name}</Text>
+          {pages.length > 1 && (
+            <Text variant="caption" center color={colors.textSecondary}>
+              {currentIndex + 1} / {pages.length}
+            </Text>
+          )}
+        </View>
+        <View style={styles.headerRight}>
+          {shareLoading ? (
+            <ActivityIndicator color={colors.primary} size="small" />
+          ) : (
+            <TouchableOpacity onPress={() => setShowShareSheet(true)} hitSlop={layout.hitSlop}>
+              <Icon name="share-outline" size={22} color={colors.primary} />
+            </TouchableOpacity>
+          )}
+          {isAdmin && (
+            <TouchableOpacity onPress={handleDelete} hitSlop={layout.hitSlop} style={styles.deleteBtn}>
+              <Icon name="trash-outline" size={20} color={colors.error} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
-      <View style={styles.content}>
-        {viewState.status === 'loading' && (
-          <View style={styles.stateWrap}>
-            <LoadingView message={viewState.message} />
+      {/* Page pager */}
+      <FlatList
+        ref={flatListRef}
+        data={pages}
+        keyExtractor={(_, i) => String(i)}
+        renderItem={renderPage}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
+        style={styles.pager}
+      />
+
+      {/* Page dots */}
+      {pages.length > 1 && (
+        <View style={styles.dots}>
+          {pages.map((_, i) => (
+            <View key={i} style={[styles.dot, i === currentIndex && styles.dotActive]} />
+          ))}
+        </View>
+      )}
+
+      {/* Share bottom sheet */}
+      <BottomSheet visible={showShareSheet} onClose={() => setShowShareSheet(false)}>
+        <Text variant="h2" style={styles.shareTitle}>Share "{doc.name}"</Text>
+        <TouchableOpacity style={styles.shareOption} onPress={shareAsPDF} activeOpacity={0.7}>
+          <View style={styles.shareOptionIcon}>
+            <Icon name="document-text-outline" size={22} color={colors.primary} />
           </View>
-        )}
-
-        {viewState.status === 'error' && (
-          <View style={styles.stateWrap}>
-            <ErrorView message={viewState.message} onRetry={load} />
+          <View style={{ flex: 1 }}>
+            <Text variant="bodyMedium">Share as PDF</Text>
+            <Text variant="caption" color={colors.textSecondary}>
+              {pages.length > 1 ? `All ${pages.length} pages in one PDF` : 'Convert to PDF and share'}
+            </Text>
           </View>
+          <Icon name="chevron-forward" size={16} color={colors.textTertiary} />
+        </TouchableOpacity>
+        {pages.length === 1 && pages[0].mimeType.startsWith('image/') && (
+          <TouchableOpacity style={styles.shareOption} onPress={shareOriginal} activeOpacity={0.7}>
+            <View style={styles.shareOptionIcon}>
+              <Icon name="image-outline" size={22} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text variant="bodyMedium">Share as Image</Text>
+              <Text variant="caption" color={colors.textSecondary}>Share original JPEG/PNG file</Text>
+            </View>
+            <Icon name="chevron-forward" size={16} color={colors.textTertiary} />
+          </TouchableOpacity>
         )}
-
-        {viewState.status === 'image' && (
-          <ScrollView
-            contentContainerStyle={styles.imageContainer}
-            maximumZoomScale={4}
-            minimumZoomScale={1}
-            showsVerticalScrollIndicator={false}
-          >
-            <Image
-              source={{ uri: viewState.uri }}
-              style={styles.image}
-              resizeMode="contain"
-              onError={() => setViewState({ status: 'error', message: 'Failed to render image' })}
-            />
-          </ScrollView>
-        )}
-
-        {viewState.status === 'pdf' && Platform.OS === 'ios' && (
-          <WebView
-            source={{ uri: viewState.localUri }}
-            style={styles.webview}
-            onError={() => setViewState({ status: 'error', message: 'Failed to render PDF' })}
-          />
-        )}
-
-        {viewState.status === 'pdf' && Platform.OS === 'android' && (
-          <View style={styles.stateWrap}>
-            <EmptyState
-              icon="document-text-outline"
-              title={doc.fileName}
-              message="Tap Open to view in your PDF app."
-              actionLabel="Open PDF"
-              onAction={handleShare}
-            />
-          </View>
-        )}
-      </View>
+      </BottomSheet>
     </SafeAreaView>
   );
 }
@@ -201,19 +398,80 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
     minHeight: layout.headerHeight,
     backgroundColor: colors.background,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  headerBtn: { minWidth: 64 },
-  headerBtnRight: { alignItems: 'flex-end' },
-  headerTitle: { flex: 1 },
-  content: { flex: 1 },
+  headerBtn: { minWidth: 44, justifyContent: 'center' },
+  headerMid: { flex: 1, alignItems: 'center' },
+  headerRight: {
+    minWidth: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
+  },
+  deleteBtn: { padding: 2 },
+  pager: { flex: 1 },
+  pageSlide: {
+    width: SCREEN_WIDTH,
+    flex: 1,
+    backgroundColor: colors.black,
+  },
+  pageCenter: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    padding: spacing.xl,
+  },
+  imageContainer: { flex: 1, backgroundColor: colors.black },
+  image: { width: SCREEN_WIDTH, flex: 1 },
   webview: { flex: 1 },
-  imageContainer: { flexGrow: 1, justifyContent: 'center', backgroundColor: colors.black },
-  image: { width: '100%', height: undefined, aspectRatio: 1, maxHeight: 800 },
-  stateWrap: { flex: 1, backgroundColor: colors.background },
+  dots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.background,
+    gap: spacing.xs,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.border,
+  },
+  dotActive: { backgroundColor: colors.primary, width: 16 },
+  modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
+  shareSheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  shareTitle: { marginBottom: spacing.md },
+  shareOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: 12,
+    marginBottom: spacing.xs,
+  },
+  shareOptionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  shareCancel: { marginTop: spacing.md, paddingVertical: spacing.md, alignItems: 'center' },
+  handleArea: { paddingVertical: 12, alignItems: 'center' },
+  handleBar: { width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border },
 });

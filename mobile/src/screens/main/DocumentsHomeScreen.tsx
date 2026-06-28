@@ -7,12 +7,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../types/navigation';
 import { Text } from '../../components/ui';
 import { colors, spacing, radius, shadows, scaleFont } from '../../theme';
-import { TAB_SCROLL_PADDING } from '../../navigation';
+import { TAB_SCROLL_PADDING } from '../../navigation/constants';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
-const CATEGORIES: { key: string; label: string; icon: IoniconName; sub: string; color: string }[] = [
+export const CATEGORIES: { key: string; label: string; icon: IoniconName; sub: string; color: string }[] = [
   { key: 'identity',  label: 'Identity',   icon: 'card-outline',          sub: 'Aadhaar, PAN, Passport', color: '#E8F0FE' },
   { key: 'property',  label: 'Property',   icon: 'home-outline',          sub: 'Land records, Deeds',     color: '#FEF3C7' },
   { key: 'financial', label: 'Financial',  icon: 'wallet-outline',        sub: 'Insurance, Passbooks',    color: '#DCFCE7' },
@@ -22,7 +22,7 @@ const CATEGORIES: { key: string; label: string; icon: IoniconName; sub: string; 
   { key: 'other',     label: 'Other',      icon: 'document-text-outline', sub: 'Ration card, Misc',       color: '#F3E8FF' },
 ];
 
-const ICON_COLOR: Record<string, string> = {
+export const ICON_COLOR: Record<string, string> = {
   identity: '#4F6DD6',
   property: '#D97706',
   financial: '#16A34A',
@@ -39,6 +39,12 @@ export default function DocumentsHomeScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <Text variant="h2">Family Vault</Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Search')}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="search-outline" size={scaleFont(22)} color={colors.text} />
+        </TouchableOpacity>
       </View>
 
       <FlatList

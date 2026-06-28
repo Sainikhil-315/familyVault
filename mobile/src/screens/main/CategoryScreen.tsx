@@ -1,32 +1,22 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { FlatList, Alert, StyleSheet } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { FlatList, Alert, StyleSheet, RefreshControl, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { AppStackParamList } from '../../types/navigation';
 import { listDocuments, DocumentMeta } from '../../api/documents.api';
 import { useAuth } from '../../contexts/AuthContext';
-import { Ionicons } from '@expo/vector-icons';
-import { AppHeader, ListRow, IconChip, LoadingView, EmptyState } from '../../components/ui';
+import { AppHeader, ListRow, IconChip, LoadingView, EmptyState, SearchBar, Text } from '../../components/ui';
 import { colors, spacing } from '../../theme';
-
-type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
-
-const MIME_ICONS: Record<string, IoniconName> = {
-  pdf: 'document-text-outline',
-  image: 'image-outline',
-};
-
-function getMimeIcon(mimeType: string): IoniconName {
-  if (mimeType.includes('pdf')) return MIME_ICONS.pdf;
-  if (mimeType.includes('image')) return MIME_ICONS.image;
-  return 'document-outline';
-}
 
 type Props = {
   navigation: NativeStackNavigationProp<AppStackParamList, 'Category'>;
   route: RouteProp<AppStackParamList, 'Category'>;
 };
+
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -38,11 +28,20 @@ function formatDate(ms: number): string {
   return new Date(ms).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+function getDocIcon(doc: DocumentMeta): IoniconName {
+  const mimeType = doc.pages?.[0]?.mimeType ?? '';
+  if (mimeType.includes('pdf')) return 'document-text-outline';
+  if (mimeType.startsWith('image/')) return 'image-outline';
+  return 'document-outline';
+}
+
 export default function CategoryScreen({ navigation, route }: Props) {
   const { category, label } = route.params;
   const { familyId } = useAuth();
   const [docs, setDocs] = useState<DocumentMeta[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [query, setQuery] = useState('');
 
   const fetchDocs = useCallback(async () => {
     if (!familyId) return;
@@ -56,14 +55,28 @@ export default function CategoryScreen({ navigation, route }: Props) {
     }
   }, [familyId, category]);
 
-  useEffect(() => { fetchDocs(); }, [fetchDocs]);
+  useFocusEffect(useCallback(() => { fetchDocs(); setQuery(''); }, [fetchDocs]));
+
+  const filteredDocs = useMemo(() => {
+    const q = query.toLowerCase().trim();
+    if (!q) return docs;
+    return docs.filter(d => d.name.toLowerCase().includes(q));
+  }, [docs, query]);
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    await fetchDocs();
+    setRefreshing(false);
+  }
 
   function renderItem({ item }: { item: DocumentMeta }) {
+    const pageCount = item.pages?.length ?? 1;
+    const size = formatBytes(item.totalSize ?? 0);
     return (
       <ListRow
-        title={item.fileName}
-        subtitle={`${formatBytes(item.fileSize)} · ${formatDate(item.uploadedAt)}`}
-        leading={<IconChip icon={getMimeIcon(item.mimeType)} size={44} />}
+        title={item.name}
+        subtitle={`${pageCount} page${pageCount > 1 ? 's' : ''} · ${size} · ${formatDate(item.uploadedAt)}`}
+        leading={<IconChip icon={getDocIcon(item)} size={44} />}
         showChevron
         onPress={() => navigation.navigate('DocumentView', { doc: item })}
       />
@@ -72,27 +85,44 @@ export default function CategoryScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <AppHeader
-        title={label}
-        onBack={() => navigation.goBack()}
+      <AppHeader title={label} onBack={() => navigation.goBack()} />
+      <SearchBar
+        value={query}
+        onChangeText={setQuery}
+        placeholder={`Search ${label.toLowerCase()} documents…`}
       />
 
       {loading ? (
         <LoadingView />
       ) : (
         <FlatList
-          data={docs}
+          data={filteredDocs}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <EmptyState
-              icon="folder-open-outline"
-              title={`No ${label.toLowerCase()} documents yet`}
-              actionLabel="Upload First Document"
-              onAction={() => navigation.navigate('DocumentUpload', { presetCategory: category })}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
             />
+          }
+          ListEmptyComponent={
+            query.trim() ? (
+              <EmptyState
+                icon="search-outline"
+                title={`No results for "${query}"`}
+              />
+            ) : (
+              <EmptyState
+                icon="folder-open-outline"
+                title={`No ${label.toLowerCase()} documents yet`}
+                actionLabel="Upload First Document"
+                onAction={() => navigation.navigate('DocumentUpload', { presetCategory: category })}
+              />
+            )
           }
         />
       )}

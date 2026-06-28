@@ -54,7 +54,7 @@ export default function FamilyCreateScreen() {
       <View style={styles.form}>
         <Input
           label="Your Name"
-          placeholder="e.g. Nikhil Sharma"
+          placeholder="e.g. Sharma Family"
           value={adminName}
           onChangeText={setAdminName}
           maxLength={40}

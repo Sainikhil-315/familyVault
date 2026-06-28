@@ -41,14 +41,21 @@ export type DocumentCategory =
   | 'vehicle'
   | 'other';
 
+export interface DocumentPage {
+  r2Key: string;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+  pageIndex: number;
+}
+
 export interface DocumentDoc {
   familyId: string;
   uploadedBy: string;
   belongsTo: string; // userId or 'family'
   category: DocumentCategory;
-  fileName: string;
-  r2Key: string;
-  fileSize: number;
-  mimeType: string;
+  name: string;            // user-provided document name
+  pages: DocumentPage[];   // one entry per uploaded file/page
+  totalSize: number;       // sum of all page sizes
   uploadedAt: FirebaseFirestore.Timestamp;
 }

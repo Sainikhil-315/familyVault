@@ -27,6 +27,7 @@ export type RootStackParamList = {
   Notifications: undefined;
   Members: undefined;
   FamilySettings: undefined;
+  Search: undefined;
 };
 
 // Backward-compat alias so existing typed props still compile

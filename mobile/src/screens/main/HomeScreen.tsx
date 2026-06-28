@@ -1,15 +1,16 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, StyleSheet, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../types/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { listDocuments, DocumentMeta } from '../../api/documents.api';
-import { Text, Avatar, SectionLabel, Icon, IconName } from '../../components/ui';
-import { colors, spacing, radius, shadows, scaleFont } from '../../theme';
-import { TAB_SCROLL_PADDING } from '../../navigation';
+import { Text, Avatar, SectionLabel, Icon } from '../../components/ui';
+import { colors, spacing, radius, shadows } from '../../theme';
+import { TAB_SCROLL_PADDING } from '../../navigation/constants';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -33,14 +34,20 @@ const CATEGORY_ICONS: Record<string, IoniconName> = {
   other: 'document-text-outline',
 };
 
+function getDocIcon(doc: DocumentMeta): IoniconName {
+  if (doc.pages?.[0]?.mimeType?.includes('pdf')) return 'document-text-outline';
+  if (doc.pages?.[0]?.mimeType?.startsWith('image/')) return 'image-outline';
+  return CATEGORY_ICONS[doc.category] ?? 'document-outline';
+}
+
 export default function HomeScreen() {
   const navigation = useNavigation<Nav>();
   const { role, canUpload, memberName, familyName, familyId } = useAuth();
-  const isAdmin = role === 'admin';
-  const showUpload = isAdmin || canUpload;
+  const showUpload = role === 'admin' || canUpload;
 
   const [recentDocs, setRecentDocs] = useState<DocumentMeta[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const firstName = memberName?.split(' ')[0] ?? 'there';
 
@@ -57,11 +64,17 @@ export default function HomeScreen() {
     }
   }, [familyId]);
 
-  useEffect(() => { fetchRecent(); }, [fetchRecent]);
+  // Refresh every time screen comes into focus
+  useFocusEffect(useCallback(() => { fetchRecent(); }, [fetchRecent]));
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    await fetchRecent();
+    setRefreshing(false);
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      {/* Header */}
       <View style={styles.header}>
         <View>
           <Text variant="h2">Good day, {firstName}</Text>
@@ -71,8 +84,18 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Upload CTA */}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+      >
         {showUpload && (
           <TouchableOpacity
             activeOpacity={0.88}
@@ -90,7 +113,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Recent documents */}
         <SectionLabel>Recent Documents</SectionLabel>
 
         {!loadingDocs && recentDocs.length === 0 ? (
@@ -110,16 +132,15 @@ export default function HomeScreen() {
                 onPress={() => navigation.navigate('DocumentView', { doc })}
               >
                 <View style={styles.docIcon}>
-                  <Ionicons
-                    name={doc.mimeType.includes('pdf') ? 'document-text-outline' : 'image-outline'}
-                    size={22}
-                    color={colors.primary}
-                  />
+                  <Ionicons name={getDocIcon(doc)} size={22} color={colors.primary} />
                 </View>
                 <View style={styles.docInfo}>
-                  <Text variant="bodyMedium" numberOfLines={1}>{doc.fileName}</Text>
+                  <Text variant="bodyMedium" numberOfLines={1}>{doc.name}</Text>
                   <Text variant="caption">
-                    {doc.category.charAt(0).toUpperCase() + doc.category.slice(1)} · {formatBytes(doc.fileSize)} · {formatDate(doc.uploadedAt)}
+                    {doc.category.charAt(0).toUpperCase() + doc.category.slice(1)}
+                    {doc.pages?.length > 1 ? ` · ${doc.pages.length} pages` : ''}
+                    {' · '}{formatBytes(doc.totalSize ?? 0)}
+                    {' · '}{formatDate(doc.uploadedAt)}
                   </Text>
                 </View>
                 <Icon name="chevron-forward" size={16} color={colors.textTertiary} />
